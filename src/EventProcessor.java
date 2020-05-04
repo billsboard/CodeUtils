@@ -37,6 +37,11 @@ class EventProcessor {
     EventProcessor(Flux<MessageCreateEvent> on) {
 
         File commandLog = new File("commandLog.txt");
+        try {
+            commandLogStream = new PrintStream(commandLog);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
         on.subscribe(messageCreateEvent -> {
             try {
@@ -65,6 +70,8 @@ class EventProcessor {
         else if(sender.isBot()) return;
 
         if(channel == null) return;
+
+        commandLogStream.println(sender.getUsername() + ": " + body);
 
         switch (lowerArgs[0].substring(1)){
             case "pfact": case "primefact": case "primefactor": {
