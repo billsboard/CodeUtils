@@ -65,7 +65,7 @@ public class BotUtils {
         }
         if(factorCounter > 0){numberMap.put(2,factorCounter);}
 
-        for (int i = 3; i < Math.sqrt(n); i++) {
+        for (int i = 3; i <= Math.sqrt(n); i++) {
             factorCounter = 0;
             while (n % i == 0){
                 factorCounter++;
