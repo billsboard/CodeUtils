@@ -1,7 +1,14 @@
 import discord4j.core.spec.EmbedCreateSpec;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -96,4 +103,5 @@ public class Data {
         }
     };
 
+    static HashMap<String, Integer> languageID = new HashMap<>();
 }

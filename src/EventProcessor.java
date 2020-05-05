@@ -486,6 +486,18 @@ class EventProcessor {
                 }
                 break;
             }
+            case "eval": case "exec": case "execute":{
+                if(lowerArgs.length < 3){
+                    BotUtils.sendArgumentsError(channel, "eval", "language", "code");
+                }
+                else if(!Data.languageID.containsKey(lowerArgs[1])){
+                    BotUtils.sendMessage(channel, "Language was not found!");
+                }
+                else{
+                    new EvalThread(lowerArgs[1], BotUtils.removeCommand(body, rawArgs[0] + " " + rawArgs[1]), channel).start();
+                }
+                break;
+            }
             case "help":{
                 BotUtils.sendMessage(channel, Data.helpEmbed);
                 break;
