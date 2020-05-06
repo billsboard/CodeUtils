@@ -32,7 +32,7 @@ public class Data {
                     "`round [number]`\n" +
                     "`floor [number]`\n" +
                     "`ceiling [number]`\n" +
-                    "`constant` [constant]", true)
+                    "`constant [constant]`", true)
                 .addField("\u200b", "Gets prime factorization\n" +
                         "Evaluates math expression\n" +
                         "Converts number between bases\n" +
@@ -58,10 +58,12 @@ public class Data {
 
         x.addField("**Programming**", "`time (timeZone)`\n" +
                 "`jclass [string]`\n" +
-                "`stackoverflow [string]`", true)
+                "`stackoverflow [string]`\n" +
+                "`eval [language] [code]`", true)
                 .addField("\u200b", "Get the current time\n" +
                         "Get data for a Java class\n" +
-                        "Search StackOverflow for answers", true)
+                        "Search StackOverflow for answers\n" +
+                        "Executes code and returns `stdout`", true)
                 .addField("\u200b", "\u200b", true);
 
         x.addField("**Other**", "`help`\n" +
