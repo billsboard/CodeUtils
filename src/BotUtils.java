@@ -34,7 +34,12 @@ public class BotUtils {
 
 
     static void sendMessage(MessageChannel channel, String message){
-        channel.createMessage(message).block();
+        if(message.length() > 2000){
+            channel.createMessage("```Resultant message greater than 2000 characters```").block();
+        }
+        else{
+            channel.createMessage(message).block();
+        }
     }
 
     static void sendMessage(MessageChannel channel, Consumer<EmbedCreateSpec> embed){
