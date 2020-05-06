@@ -69,7 +69,7 @@ class EvalThread extends Thread {
                     else if(new JSONObject(temp.toString()).getJSONObject("status").getInt("id") == 11){
                         JSONObject obj = new JSONObject(temp.toString());
                         String out = "Error:\n```";
-                        out += obj.getString("stderr") + "```";
+                        out += new String(Base64.getMimeDecoder().decode(obj.getString("stderr"))) + "```";
                         BotUtils.sendMessage(c, out);
 
                         return;
@@ -110,6 +110,9 @@ class EvalThread extends Thread {
                 System.out.println(obj.getJSONObject("status").toString());
 
                 BotUtils.sendMessage(c, out);
+            }
+            else{
+                System.out.println(con.getResponseCode());
             }
 
 
