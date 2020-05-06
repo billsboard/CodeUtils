@@ -494,7 +494,9 @@ class EventProcessor {
                     BotUtils.sendMessage(channel, "Language was not found!");
                 }
                 else{
-                    new EvalThread(lowerArgs[1], BotUtils.removeCommand(body, rawArgs[0] + " " + rawArgs[1]), channel).start();
+                    BotUtils.sendMessage(channel, "Evaluating... This can take a while");
+                    String s = BotUtils.removeCommand(body, rawArgs[0] + " " + rawArgs[1]);
+                    new EvalThread(lowerArgs[1], s, channel).start();
                 }
                 break;
             }
