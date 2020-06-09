@@ -364,37 +364,165 @@ class EventProcessor {
                             .setDescription(guild.getDescription().isPresent() ? guild.getDescription().get() : "No description set");
 
                     List<Member> members = guild.getMembers().collectList().block();
-                    e.addField("Members", "" + members.size(), true);
+
+                    e.addField("Server user information", "Members\nHumans\nBots\nOwner\nHuman Administrators", true);
 
                     int x = 0;
                     int y = 0;
                     for (Member m : members) {
                         if(m.isBot()) x++;
-                        else if(m.getHighestRole().block().getPermissions().contains(Permission.ADMINISTRATOR)) y++;
+                        List<Role> roles = m.getRoles().collectList().block();
+                        if(roles != null && !m.isBot()){
+                            for(Role r : roles){
+                                if(r.getPermissions().contains(Permission.ADMINISTRATOR)){
+                                    y++;
+                                    break;
+                                }
+                            }
+                        }
+
                     }
-                    e.addField("Humans", "" + (members.size() - x), true);
-                    e.addField("Bots", "" + x, true);
 
                     Member owner = guild.getOwner().block();
-                    e.addField("Owner", owner.getNicknameMention(), true);
+
+                    e.addField("\u200b", members.size() + "\n" + (members.size() - x) + "\n" +
+                            x + "\n" + owner.getNicknameMention() + "\n" + y, true);
                     e.addField("\u200b", "\u200b", true);
-                    e.addField("Human Administrators", "" + y, true);
+
 
                     List<Role> roles = guild.getRoles().collectList().block();
-                    e.addField("Roles", "" + roles.size(), true);
-                    e.addField("Highest Role", roles.get(roles.size() - 1 ).getName(), true);
-                    e.addField("Emojis", guild.getEmojis().collectList().block().size() + "", true);
-                    e.addField("Region", guild.getRegionId(), true);
+
+                    e.addField("Server information", "Roles\nEmojis\nHighest Role\nRegion\nAFK Channel\nCreation Date", true);
+
 
                     VoiceChannel afk = guild.getAfkChannel().block();
-                    e.addField("AFK Channel", afk == null ? "Not set" : afk.getMention(), true);
 
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                    e.addField("Creation date", sdf.format(new Date(guild.getJoinTime().get().getEpochSecond())), true);
 
-                    //e.setFooter("Created by " + Main.client.getSelf().block().getMention(),Main.client.getSelf().block().getAvatarUrl());
+                    e.addField("\u200b", roles.size() + "\n" + guild.getEmojis().collectList().block().size() + "\n" +
+                            roles.get(roles.size() - 1 ).getName() + "\n" + guild.getRegionId() + "\n" + (afk == null ? "Not set" : afk.getMention()) +
+                            "\n" + sdf.format(new Date(guild.getJoinTime().get().getEpochSecond())), true);
+                    e.addField("\u200b", "\u200b", true);
+
+                    e.addField("Nitro", "Tier\nBoosts", true);
+                    e.addField("\u200b", guild.getPremiumTier().name() + "\n" + guild.getPremiumSubcriptionsCount().getAsInt(), true);
+
+                    e.setFooter("Created by " + Main.client.getSelf().block().getMention(),Main.client.getSelf().block().getAvatarUrl());
                 };
+                BotUtils.sendMessage(channel, embedCreateSpec);
+                break;
+            }
+            case "admin": case "serveradmins": case "admins": {
+
+                Consumer<EmbedCreateSpec> embedCreateSpec = e -> {
+                    e.setTitle("List of Administrators for \"" + guild.getName() + "\"");
+
+                    List<Member> members = guild.getMembers().collectList().block();
+                    String x = ""; String y  = "";
+
+                    String z = ""; String a = "";
+
+                    x += guild.getOwner().block().getNicknameMention() + "\n";
+                    y += "Server Owner\n";
+
+                    members.remove(guild.getOwner().block());
+
+                    for (Member m : members) {
+                        List<Role> roles = m.getRoles().collectList().block();
+                        if (roles != null) {
+                            for (Role r : roles) {
+                                if (r.getPermissions().contains(Permission.ADMINISTRATOR)) {
+                                    if (m.isBot()) {
+                                        z += m.getNicknameMention() + "\n";
+                                        a += r.getMention() + "\n";
+                                    } else {
+                                        x += m.getNicknameMention() + "\n";
+                                        y += r.getMention() + "\n";
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+
+                    boolean done = false;
+
+                    if(!x.isEmpty() && !y.isEmpty()){
+                        e.addField("Human Admins", x, true);
+                        e.addField("Granted by", y, true);
+                        e.addField("\u200b", "\u200b", true);
+                        done = true;
+                    }
+
+                    if(!z.isEmpty() && !a.isEmpty()){
+                        e.addField("Bot Admins", z, true);
+                        e.addField("Granted by", a, true);
+                        e.addField("\u200b", "\u200b", true);
+                        done = true;
+                    }
+
+                    if(!done){
+                        e.addField("\u200b", "There are no admins", false);
+                    }
+
+                };
+
+                BotUtils.sendMessage(channel, embedCreateSpec);
+                break;
+            }
+            case "serverroles": case "roles": case "role": {
+                Consumer<EmbedCreateSpec> embedCreateSpec = e -> {
+                    e.setTitle("List of roles for \"" + guild.getName() + "\"");
+
+                    List<Role> roles = guild.getRoles().collectList().block();
+                    String x = ""; String y  = "";
+
+                    String z = ""; String a = "";
+
+                    x += "";
+                    y += "";
+
+
+                    for (Role r : roles) {
+                        if(r.isManaged()){
+                            z += r.getMention() + "\n";
+                            a += r.getPermissions().contains(Permission.ADMINISTRATOR) ? "Yes\n" : "No\n";
+                        }
+                        else if(r.isEveryone()){
+                            x += "@everyone\n";
+                            y += r.getPermissions().contains(Permission.ADMINISTRATOR) ? "Yes\n" : "No\n";
+                        }
+                        else{
+                            x += r.getMention() + "\n";
+                            y += r.getPermissions().contains(Permission.ADMINISTRATOR) ? "Yes\n" : "No\n";
+                        }
+                    }
+
+
+                    boolean done = false;
+
+                    if(!x.isEmpty() && !y.isEmpty()){
+                        e.addField("Regular Roles", x, true);
+                        e.addField("Administrator?", y, true);
+                        e.addField("\u200b", "\u200b", true);
+                        done = true;
+                    }
+
+                    if(!z.isEmpty() && !a.isEmpty()){
+                        e.addField("Integrated Roles", z, true);
+                        e.addField("Administrator?", a, true);
+                        e.addField("\u200b", "\u200b", true);
+                        done = true;
+                    }
+
+                    if(!done){
+                        e.addField("\u200b", "There are no roles to show", false);
+                    }
+
+                };
+
                 BotUtils.sendMessage(channel, embedCreateSpec);
                 break;
             }
