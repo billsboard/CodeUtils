@@ -478,6 +478,7 @@ class EventProcessor {
                     e.setTitle("List of roles for \"" + guild.getName() + "\"");
 
                     List<Role> roles = guild.getRoles().collectList().block();
+                    Collections.reverse(roles);
                     String x = ""; String y  = "";
 
                     String z = ""; String a = "";
@@ -601,14 +602,13 @@ class EventProcessor {
                     Member m = guild.getMemberById(userToUse.getId()).block();
 
                     e.setDescription("Data for user " + m.getNicknameMention());
-                    List<Role> roles = guild.getRoles().collectList().block();
 
 
                     String x = "";
 
-                    e.addField("Basic information", "Global Username\nID\n", true);
+                    e.addField("Basic information", "Global Username\nID\nBot?", true);
                     e.addField("\u200b", userToUse.getUsername() + "#" + userToUse.getDiscriminator() + "\n" +
-                            m.getId().asLong(), true);
+                            m.getId().asLong() + "\n" + (userToUse.isBot() ? "Yes" : "No"), true);
                     e.addField("\u200b", "\u200b", true);
 
 
@@ -623,6 +623,7 @@ class EventProcessor {
                     e.addField("Server-specific information", "Top Role\nServer join time (UTC)", true);
                     e.addField("\u200b", x, true);
 
+                    e.setColor(m.getColor().block());
                     //e.addField("Permissions", y.toString(), false);
                 };
 
