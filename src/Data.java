@@ -52,10 +52,16 @@ public class Data {
 
         x.addField("**Discord**", "`avatar (user)`\n" +
                 "`serverinfo`\n" +
-                "`admins`", true)
+                "`admins`\n" +
+                "`roles`\n" +
+                "`roleinfo`\n" +
+                "`userinfo`", true)
                 .addField("\u200b", "Gets a profile picture\n" +
                         "Displays server data\n" +
-                        "Gets all admins in server", true)
+                        "Gets all admins in server\n" +
+                        "Get all the roles in the server\n" +
+                        "Get data on a specific role\n" +
+                        "Get data on a specific person", true)
                 .addField("\u200b", "\u200b", true);
 
         x.addField("**Programming**", "`time (timeZone)`\n" +

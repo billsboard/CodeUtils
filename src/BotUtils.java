@@ -1,6 +1,7 @@
 import discord4j.core.object.entity.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -184,6 +185,30 @@ public class BotUtils {
 
     static String getUserFromMention(String s){
         return s.replaceAll("[^\\d]", "");
+    }
+
+    static String hexFromColor(Color color){
+        String hex = Integer.toHexString(color.getRGB() & 0xffffff);
+        if (hex.length() < 6) {
+            hex = "0" + hex;
+        }
+        return "#" + hex;
+    }
+
+    static String capitalizeFirst(String s){
+        String[] x = s.split(" ");
+        StringBuilder out = new StringBuilder();
+        for (String y : x) {
+            y = y.toLowerCase();
+            if(y.length() == 1){ out.append(y.toUpperCase());}
+            else{
+                out.append(y.substring(0,1).toUpperCase() + y.substring(1));
+            }
+
+            out.append(" ");
+        }
+
+        return out.toString().trim();
     }
 
     static String getPublicIP(){

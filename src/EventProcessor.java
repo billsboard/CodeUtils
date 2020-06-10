@@ -402,8 +402,9 @@ class EventProcessor {
 
                     e.addField("\u200b", roles.size() + "\n" + guild.getEmojis().collectList().block().size() + "\n" +
                             roles.get(roles.size() - 1 ).getName() + "\n" + guild.getRegionId() + "\n" + (afk == null ? "Not set" : afk.getMention()) +
-                            "\n" + sdf.format(new Date(guild.getJoinTime().get().getEpochSecond())), true);
+                            "\n" + sdf.format(new Date(guild.getJoinTime().get().toEpochMilli())), true);
                     e.addField("\u200b", "\u200b", true);
+
 
                     e.addField("Nitro", "Tier\nBoosts", true);
                     e.addField("\u200b", guild.getPremiumTier().name() + "\n" + guild.getPremiumSubcriptionsCount().getAsInt(), true);
@@ -472,7 +473,7 @@ class EventProcessor {
                 BotUtils.sendMessage(channel, embedCreateSpec);
                 break;
             }
-            case "serverroles": case "roles": case "role": {
+            case "serverroles": case "roles":{
                 Consumer<EmbedCreateSpec> embedCreateSpec = e -> {
                     e.setTitle("List of roles for \"" + guild.getName() + "\"");
 
@@ -524,6 +525,111 @@ class EventProcessor {
                 };
 
                 BotUtils.sendMessage(channel, embedCreateSpec);
+                break;
+            }
+            case "roleinfo": case "role":{
+                if(lowerArgs.length < 2 || !BotUtils.isPositiveInteger(BotUtils.getUserFromMention(lowerArgs[1]))){
+                    BotUtils.sendArgumentsError(channel, "roleinfo", "role");
+                }
+                else if(guild.getRoleById(Snowflake.of(BotUtils.getUserFromMention(lowerArgs[1]))) == null){
+                    BotUtils.sendMessage(channel, "Role not found!");
+                }
+                else{
+                    Role r = guild.getRoleById(Snowflake.of(BotUtils.getUserFromMention(lowerArgs[1]))).block();
+                    List<Role> roles = guild.getRoles().collectList().block();
+
+                    Consumer<EmbedCreateSpec> embedCreateSpecConsumer = e -> {
+                        e.setTitle("Data for " + r.getName() + " role");
+
+                        e.setColor(r.getColor());
+
+                        List<Member> members = guild.getMembers().collectList().block();
+                        int x = 0;
+                        for (Member m : members) {
+                            if(m.getRoles().collectList().block().contains(r)) x++;
+                        }
+
+                        e.addField("Assigned members", "" + x, true);
+                        e.addField("Position", "" + (roles.size() - roles.indexOf(r)), true);
+                        e.addField("Color", BotUtils.hexFromColor(r.getColor()), true);
+
+                        StringBuilder y = new StringBuilder();
+                        Set<Permission> perms = r.getPermissions();
+                        for (Permission p : perms) {
+                            y.append(
+                                    BotUtils.capitalizeFirst(p.toString().replace("_", " ")).replace("Tts", "TTS").
+                                            replace("Vad", "Voice Activity") +
+                                            "\n");
+                        }
+
+
+                        if(y.toString().isEmpty()) y.append("No permissions explicitly granted");
+                        e.addField("Permissions", y.toString(), false);
+                    };
+
+                    BotUtils.sendMessage(channel, embedCreateSpecConsumer);
+
+                }
+
+                break;
+            }
+            case "userinfo": case "user": {
+
+                User userToUse;
+
+                if(lowerArgs.length < 2){
+                    userToUse = sender;
+                }
+                else if(!BotUtils.isPositiveInteger(BotUtils.getUserFromMention(lowerArgs[1]))){
+                    BotUtils.sendArgumentsError(channel, "avatar", "optional @user");
+                    break;
+                }
+                else{
+                    User u = Main.client.getUserById(Snowflake.of(BotUtils.getUserFromMention(lowerArgs[1]))).block();
+                    if(u == null || guild.getMemberById(u.getId()).block() == null){
+                        BotUtils.sendMessage(channel, "User not found!");
+                        break;
+                    }
+
+                    userToUse = u;
+                }
+
+
+
+                Consumer<EmbedCreateSpec> embedCreateSpecConsumer = e -> {
+
+                    Member m = guild.getMemberById(userToUse.getId()).block();
+
+                    e.setDescription("Data for user " + m.getNicknameMention());
+                    List<Role> roles = guild.getRoles().collectList().block();
+
+
+                    String x = "";
+
+                    e.addField("Basic information", "Global Username\nID\n", true);
+                    e.addField("\u200b", userToUse.getUsername() + "#" + userToUse.getDiscriminator() + "\n" +
+                            m.getId().asLong(), true);
+                    e.addField("\u200b", "\u200b", true);
+
+
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+                    x += m.getHighestRole().block().getMention() + "\n";
+                    x += sdf.format(m.getJoinTime().toEpochMilli()) + "\n";
+
+
+
+                    e.addField("Server-specific information", "Top Role\nServer join time (UTC)", true);
+                    e.addField("\u200b", x, true);
+
+                    //e.addField("Permissions", y.toString(), false);
+                };
+
+                BotUtils.sendMessage(channel, embedCreateSpecConsumer);
+
+
+
                 break;
             }
             case "botinfo": case "info": case "status":{
