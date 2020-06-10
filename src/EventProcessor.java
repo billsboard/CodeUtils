@@ -431,6 +431,7 @@ class EventProcessor {
 
                     for (Member m : members) {
                         List<Role> roles = m.getRoles().collectList().block();
+                        Collections.reverse(roles);
                         if (roles != null) {
                             for (Role r : roles) {
                                 if (r.getPermissions().contains(Permission.ADMINISTRATOR)) {
