@@ -47,6 +47,7 @@ public class Main {
 
 
         try {
+            System.out.println("Submitting language request to Judge0");
             url = new URL("https://api.judge0.com/languages/");
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
@@ -75,6 +76,16 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        scan.close();
+        scan = new Scanner(new FileReader("keys.txt"));
+
+        while (scan.hasNextLine()){
+            String[] s = scan.nextLine().split(" ");
+            Data.apiKeys.put(s[0], s[1]);
+        }
+
+        Data.initDataParams();
 
         client.login().block();
 

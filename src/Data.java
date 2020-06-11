@@ -2,15 +2,13 @@ import discord4j.core.spec.EmbedCreateSpec;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class Data {
@@ -22,6 +20,8 @@ public class Data {
         "https://drive.google.com/uc?export=download&id=1wXlJ52-kwSgv8KQjXszAZz0MwYHQq2aW",
         "https://drive.google.com/uc?export=download&id=1YE3jL_bkOJ_Zs-kFfGuQzyx0TVZ-7JLf",
         "https://drive.google.com/uc?export=download&id=19YfyRfe0Rc6DAfZKwuxaQGqVFQcTlxY-"};
+
+    static ArrayList<Consumer<EmbedCreateSpec>> helpEmbeds = new ArrayList<>();
 
     static Consumer<EmbedCreateSpec> helpEmbed = x -> {
         x.setTitle("Help page");
@@ -114,4 +114,79 @@ public class Data {
     };
 
     static HashMap<String, Integer> languageID = new HashMap<>();
+
+    static HashMap<String, String> apiKeys = new HashMap<>();
+
+    static HashMap<String, HashMap<String, String>> helpData = new HashMap<>(){
+        {
+
+        }
+    };
+
+    static void initDataParams(){
+
+        String s = getResource("help.txt");
+        Scanner scan = new Scanner(s);
+
+        String in = scan.nextLine();
+        while (scan.hasNextLine()){
+            String title = "";
+
+            String[] data;
+            StringBuilder temp = new StringBuilder();
+
+            if(in.startsWith("[[")){
+                title = in.substring(2, in.length() - 2);
+                in = scan.nextLine();
+                while (!in.startsWith("[[")){
+                    temp.append(in);
+                    temp.append("\n\n");
+                    if(scan.hasNextLine()){
+                        in = scan.nextLine();
+                    }
+                    else{
+                        break;
+                    }
+                }
+            }
+
+            data = temp.toString().split("\n\n");
+
+            String finalTitle = title;
+            String[] finalData = data;
+            Consumer<EmbedCreateSpec> spec = e -> {
+                e.setDescription(finalTitle);
+
+                StringBuilder x = new StringBuilder();
+                StringBuilder y = new StringBuilder();
+
+                for (String finalDatum : finalData) {
+                    String[] z = finalDatum.split(" :: ");
+                    x.append(z[0]).append("\n");
+                    y.append(z[1]).append("\n");
+                }
+
+                e.addField("Command", x.toString(), true);
+                e.addField("\u200b", "\u200b", true);
+                e.addField("Description", y.toString(), true);
+
+                e.setFooter("[] denotes required parameter, () denotes optional parameter\nIf optional param is left blank, the sender's context will be used", "");
+            };
+            helpEmbeds.add(spec);
+        }
+    }
+
+    static String getResource(String file){
+        StringBuilder out = new StringBuilder();
+
+        InputStream i = Data.class.getResourceAsStream(file);
+        Scanner scan = new Scanner(i);
+
+        while (scan.hasNextLine()){
+            out.append(scan.nextLine());
+            out.append("\n");
+        }
+
+        return out.toString();
+    }
 }

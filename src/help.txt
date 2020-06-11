@@ -1,0 +1,30 @@
+[[Discord]]
+serverinfo :: Gets info about server
+userinfo (user) :: Gets info about a specific user
+roleinfo [role] :: Gets info about a specifc role
+roles :: Gets a list of all roles
+admins :: Fetches all the administrators
+pfp (user) :: Gets profile picture of user
+clear [number] :: Delete a number of messages
+[[Programming and Math]]
+pfact [number] :: Gets prime factorization
+base [from] [to] [value] :: Converts between bases
+calc [expr] :: Evaluates math expression
+round [number] :: Rounds the number
+floor [number] :: Rounds the number down
+ceiling [number] :: Rounds the number up
+eval [lang] [code] :: Run code in specified language
+len [str] :: Gets length of string
+rev [str] :: Reverses string
+ascii [str] :: Converts string to ASCII
+alpha [ascii] :: Converts ASCII to text
+stackoverflow [question] :: Get SO link to question
+jclass [class] :: Get data on Java Class
+[[Utility]]
+weather [location] :: Gets weather at location
+geolocation [location] :: Gets data about location
+element [element] :: Gets data about element
+time (timezone) :: Gets time in timezone
+[[Other]]
+help :: Displays this text
+squaretwitter :: Displays a random Square Twitter

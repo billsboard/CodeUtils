@@ -1,24 +1,33 @@
+import com.fasterxml.jackson.annotation.JsonAlias;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.data.stored.ChannelBean;
 import discord4j.core.object.entity.*;
+import discord4j.core.object.reaction.Reaction;
+import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.object.util.Image;
 import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
 import com.sun.management.OperatingSystemMXBean;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -53,7 +62,7 @@ class EventProcessor {
         });
     }
 
-    private void onMessageReceived(Message message) {
+    private void onMessageReceived(Message message) throws Exception{
 
         if (!message.getContent().isPresent()) return;
 
@@ -193,42 +202,6 @@ class EventProcessor {
                     embed.setImage(url);
                 };
                 BotUtils.sendMessage(channel, e);
-                break;
-            }
-            case "clear":{/*
-                if(lowerArgs.length < 2 || !BotUtils.isPositiveInteger(lowerArgs[1]) || Integer.parseInt(lowerArgs[1]) < 1 || Integer.parseInt(lowerArgs[1]) > 50){
-                    BotUtils.sendArgumentsError(channel,"clear", "0 < messages < 51");
-                    break;
-                }
-                else if(!guild.getMemberById(sender.getId()).block().getHighestRole().block().getPermissions().contains(Permission.MANAGE_MESSAGES)){
-                    BotUtils.sendMessage(channel, "You do not have the `MANAGE_MESSAGES` permission");
-                    break;
-                }
-                else if(!guild.getMemberById(Main.client.getSelfId().get()).block().getHighestRole().block().getPermissions().contains(Permission.MANAGE_MESSAGES)){
-                    BotUtils.sendMessage(channel, "Bot does not have the `MANAGE_MESSAGES` permission");
-                    break;
-                }
-                else {
-                    TextChannel textChannel = new TextChannel(channel.getClient().getServiceMediator(), new ChannelBean(channel.getId().asLong(), channel.getType().getValue()));
-                    List<Message> mL = channel.getMessagesBefore(message.getId()).collectList().block().stream().limit(Integer.parseInt(lowerArgs[1])).collect(Collectors.toList());
-                    System.out.println(mL);
-                    List<Snowflake> sL = new ArrayList<>();
-                    for (Message m : mL) {
-                        System.out.println(message);
-                        sL.add(m.getId());
-                    }
-
-                    Stream<Snowflake> stream = sL.stream();
-
-                    Publisher<Snowflake> p = new Publisher<Snowflake>() {
-                        @Override
-                        public void subscribe(Subscriber<? super Snowflake> subscriber) {
-                            stream.forEach(subscriber::onNext);
-                            subscriber.onComplete();
-                        }
-                    };
-                    textChannel.bulkDelete(p).blockFirst();
-                }*/
                 break;
             }
             case "convertbase": case "base":{
@@ -392,7 +365,7 @@ class EventProcessor {
 
                     List<Role> roles = guild.getRoles().collectList().block();
 
-                    e.addField("Server information", "Roles\nEmojis\nHighest Role\nRegion\nAFK Channel\nCreation Date", true);
+                    e.addField("Server information", "Roles\nEmojis\nChannels\nHighest Role\nRegion\nAFK Channel\nBot Join Date", true);
 
 
                     VoiceChannel afk = guild.getAfkChannel().block();
@@ -400,8 +373,8 @@ class EventProcessor {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-                    e.addField("\u200b", roles.size() + "\n" + guild.getEmojis().collectList().block().size() + "\n" +
-                            roles.get(roles.size() - 1 ).getName() + "\n" + guild.getRegionId() + "\n" + (afk == null ? "Not set" : afk.getMention()) +
+                    e.addField("\u200b", roles.size() + "\n" + guild.getEmojis().collectList().block().size() + "\n" + guild.getChannels().collectList().block().size()
+                             + "\n" + roles.get(roles.size() - 1 ).getName() + "\n" + guild.getRegionId() + "\n" + (afk == null ? "Not set" : afk.getMention()) +
                             "\n" + sdf.format(new Date(guild.getJoinTime().get().toEpochMilli())), true);
                     e.addField("\u200b", "\u200b", true);
 
@@ -480,9 +453,9 @@ class EventProcessor {
 
                     List<Role> roles = guild.getRoles().collectList().block();
                     Collections.reverse(roles);
-                    String x = ""; String y  = "";
+                    String x = ""; String y  = "", l1 = "";
 
-                    String z = ""; String a = "";
+                    String z = ""; String a = "", l2 = "";
 
                     x += "";
                     y += "";
@@ -492,15 +465,19 @@ class EventProcessor {
                         if(r.isManaged()){
                             z += r.getMention() + "\n";
                             a += r.getPermissions().contains(Permission.ADMINISTRATOR) ? "Yes\n" : "No\n";
+                            l2 += r.getPermissions().isEmpty() ? "Yes\n" : "No\n";
                         }
                         else if(r.isEveryone()){
                             x += "@everyone\n";
                             y += r.getPermissions().contains(Permission.ADMINISTRATOR) ? "Yes\n" : "No\n";
+                            l1 += r.getPermissions().isEmpty() ? "Yes\n" : "No\n";
                         }
                         else{
                             x += r.getMention() + "\n";
                             y += r.getPermissions().contains(Permission.ADMINISTRATOR) ? "Yes\n" : "No\n";
+                            l1 += r.getPermissions().isEmpty() ? "Yes\n" : "No\n";
                         }
+
                     }
 
 
@@ -509,14 +486,14 @@ class EventProcessor {
                     if(!x.isEmpty() && !y.isEmpty()){
                         e.addField("Regular Roles", x, true);
                         e.addField("Administrator?", y, true);
-                        e.addField("\u200b", "\u200b", true);
+                        e.addField("Empty (Permissionless)?", l1, true);
                         done = true;
                     }
 
                     if(!z.isEmpty() && !a.isEmpty()){
                         e.addField("Integrated Roles", z, true);
                         e.addField("Administrator?", a, true);
-                        e.addField("\u200b", "\u200b", true);
+                        e.addField("Empty (Permissionless)?", l2, true);
                         done = true;
                     }
 
@@ -711,6 +688,161 @@ class EventProcessor {
                 BotUtils.sendMessage(channel, "No Trevor, you must learn to spell!");
                 break;
             }
+            case "weather":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "weather", "location");
+                }
+                else{
+                    try{
+                        String loc = BotUtils.removeCommand(body, rawArgs[0]);
+                        URL url = new URL(("https://api.openweathermap.org/data/2.5/weather?q=" + loc + "&appid=" + Data.apiKeys.get("openweather")));
+                        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                        con.setRequestMethod("GET");
+
+                        if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+                            BufferedReader in = new BufferedReader(new InputStreamReader(
+                                    con.getInputStream()));
+                            String inputLine;
+                            StringBuilder response = new StringBuilder();
+                            while ((inputLine = in.readLine()) != null) {
+                                response.append(inputLine);
+                            }
+                            inputLine = response.toString();
+
+
+                            JSONObject obj = new JSONObject(inputLine);
+
+                            Consumer<EmbedCreateSpec> embedCreateSpecConsumer = e -> {
+
+                                try {
+                                    JSONObject coords = obj.getJSONObject("coord");
+
+
+                                    URL u = new URL("http://open.mapquestapi.com/geocoding/v1/reverse?key=" + Data.apiKeys.get("geocoding") +
+                                            "&location=" + coords.getFloat("lat") + "," + coords.getFloat("lon"));
+                                    HttpURLConnection uCon = (HttpURLConnection) u.openConnection();
+                                    uCon.setRequestMethod("GET");
+
+                                    String descriptor = obj.getJSONObject("sys").getString("country");
+
+                                    if(uCon.getResponseCode() == HttpURLConnection.HTTP_OK){
+                                        BufferedReader br = new BufferedReader(new InputStreamReader(
+                                                uCon.getInputStream()));
+                                        String line;
+                                        StringBuilder res = new StringBuilder();
+                                        while ((line = br.readLine()) != null) {
+                                            res.append(line);
+                                        }
+                                        line = res.toString();
+
+                                        descriptor = new JSONObject(line).getJSONArray("results").getJSONObject(0).getJSONArray("locations")
+                                            .getJSONObject(0).getString("adminArea3");
+                                    }
+
+
+                                    JSONObject sys = obj.getJSONObject("sys");
+                                    String t1;
+                                    String t2;
+
+                                    e.setTitle("Weather data for " + obj.getString("name") + ", " + descriptor);
+
+                                    t1 = coords.getInt("lat") < 0 ? -1 * coords.getFloat("lat") + "°S" : coords.getFloat("lat") + "°N";
+                                    t2 = coords.getInt("lon") < 0 ? -1 * coords.getFloat("lon") + "°W" : coords.getFloat("lon") + "°E";
+
+                                    e.setDescription(t1 + " " + t2);
+
+
+                                    JSONObject bWeather = obj.getJSONArray("weather").getJSONObject(0);
+                                    e.addField("Basic weather data", bWeather.getString("main"), true);
+                                    e.addField("\u200b", bWeather.getString("description"), true);
+                                    e.addField("\u200b", "\u200b", true);
+
+                                    JSONObject temp = obj.getJSONObject("main");
+                                    e.addField("Temperature data", "Temperature\nHigh\nLow\nFeels Like", true);
+                                    e.addField("\u200b", String.format("%.2f", temp.getFloat("temp") - 273.15) + "°C\n" +
+                                            String.format("%.2f", temp.getFloat("temp_max") - 273.15) + "°C\n" +
+                                            String.format("%.2f", temp.getFloat("temp_min") - 273.15) + "°C\n" +
+                                            String.format("%.2f", temp.getFloat("feels_like") - 273.15) + "°C\n", true);
+                                    e.addField("\u200b", "\u200b", true);
+
+                                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+                                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                                    e.addField("Other data", "Pressure\nHumidity\nVisibility\nSunrise\nSunset", true);
+                                    e.addField("\u200b", temp.getInt("pressure") + " hPa\n" +
+                                            temp.getInt("humidity") + "\n" + obj.getInt("visibility") + " meters\n" +
+                                            sdf.format(sys.getLong("sunrise") + obj.getLong("timezone")) + "\n" +
+                                            sdf.format(sys.getLong("sunset") + obj.getLong("timezone")), true
+                                    );
+                                }catch (Exception exc){
+                                    return;
+                                }
+
+                            };
+
+                            BotUtils.sendMessage(channel, embedCreateSpecConsumer);
+                        }
+                        else{
+                            BotUtils.sendMessage(channel, "Weather data for " + loc + " not found (check spelling?)");
+                        }
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                break;
+            }
+            case "geolocation": case "geoloc":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "geolocation", "location");
+                }
+                else{
+                    try{
+                        String loc = BotUtils.removeCommand(body, rawArgs[0]);
+                        URL u = new URL("http://open.mapquestapi.com/geocoding/v1/address?key=" + Data.apiKeys.get("geocoding") +
+                                "&location=" + loc);
+                        HttpURLConnection uCon = (HttpURLConnection) u.openConnection();
+                        uCon.setRequestMethod("GET");
+
+                        if(uCon.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                            BufferedReader in = new BufferedReader(new InputStreamReader(
+                                    uCon.getInputStream()));
+                            String inputLine;
+                            StringBuilder response = new StringBuilder();
+                            while ((inputLine = in.readLine()) != null) {
+                                response.append(inputLine);
+                            }
+                            inputLine = response.toString();
+
+                            JSONObject obj = new JSONObject(inputLine);
+                            JSONObject res = obj.getJSONArray("results").getJSONObject(0);
+                            JSONObject firstLoc = res.getJSONArray("locations").getJSONObject(0);
+
+                            Consumer<EmbedCreateSpec> embedCreateSpecConsumer = e -> {
+                                e.setDescription("Geocode data for \"" + res.getJSONObject("providedLocation").getString("location") + "\"");
+                                e.addField("Basic address info", firstLoc.getString("street") + " " +
+                                        firstLoc.getString("adminArea5") + ", " + firstLoc.getString("adminArea3") + ", " + firstLoc.getString("adminArea1"),
+                                        false);
+
+                                JSONObject coords = firstLoc.getJSONObject("latLng");
+                                String t1 = coords.getInt("lat") < 0 ? -1 * coords.getFloat("lat") + "°S" : coords.getFloat("lat") + "°N";
+                                String t2 = coords.getInt("lng") < 0 ? -1 * coords.getFloat("lng") + "°W" : coords.getFloat("lng") + "°E";
+                                e.addField("Geolocation Coordinate Data", t1, true);
+                                e.addField("\u200b", t2, true);
+                            };
+
+                            BotUtils.sendMessage(channel, embedCreateSpecConsumer);
+
+                        }
+
+
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            }
             case "reverse": case "rev":{
                 if(lowerArgs.length < 2){
                     BotUtils.sendArgumentsError(channel, "reverse", "string");
@@ -721,6 +853,137 @@ class EventProcessor {
                     BotUtils.sendMessage(channel, "```" + reversed + "```");
                 }
                 break;
+            }
+            case "element":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "element", "identifier");
+                }
+                else{
+                    String inputLine = "{\"message\":\"does not exists\"}";
+
+                    if(BotUtils.isPositiveInteger(lowerArgs[1])){
+                        URL url = new URL("https://neelpatel05.pythonanywhere.com/element/atomicnumber?atomicnumber=" + lowerArgs[1]);
+                        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                        con.setRequestMethod("GET");
+
+                        if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+                            BufferedReader in = new BufferedReader(new InputStreamReader(
+                                    con.getInputStream()));
+                            StringBuilder response = new StringBuilder();
+                            while ((inputLine = in.readLine()) != null) {
+                                response.append(inputLine);
+                            }
+                            inputLine = response.toString();
+                        }
+                    }
+                    else if(lowerArgs[1].length() < 3){
+                        URL url = new URL("https://neelpatel05.pythonanywhere.com/element/symbol?symbol=" + lowerArgs[1]);
+                        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                        con.setRequestMethod("GET");
+
+                        if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+                            BufferedReader in = new BufferedReader(new InputStreamReader(
+                                    con.getInputStream()));
+                            StringBuilder response = new StringBuilder();
+                            while ((inputLine = in.readLine()) != null) {
+                                response.append(inputLine);
+                            }
+                            inputLine = response.toString();
+                        }
+                    }
+                    else {
+                        URL url = new URL("https://neelpatel05.pythonanywhere.com/element/atomicname?atomicname=" + lowerArgs[1]);
+                        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                        con.setRequestMethod("GET");
+
+                        if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+                            BufferedReader in = new BufferedReader(new InputStreamReader(
+                                    con.getInputStream()));
+                            StringBuilder response = new StringBuilder();
+                            while ((inputLine = in.readLine()) != null) {
+                                response.append(inputLine);
+                            }
+                            inputLine = response.toString();
+                        }
+                    }
+
+                    if(inputLine.equals("{\"message\":\"does not exists\"}")){
+                        BotUtils.sendMessage(channel, "The request element could not be found");
+                    }
+                    else{
+                        JSONObject res = new JSONObject(inputLine);
+
+                        Consumer<EmbedCreateSpec> embedCreateSpecConsumer = e -> {
+                            e.setUrl("https://en.wikipedia.org/wiki/" + res.getString("name"));
+                            e.setTitle(res.getString("name"));
+
+                            String stable = "Yes";
+
+                            if(String.valueOf(res.get("atomicMass")).contains("[")){
+                                stable = "No";
+                                res.put("atomicMass", res.get("atomicMass") + "(1)");
+                            }
+                            res.put("atomicMass", String.valueOf(res.get("atomicMass")).replace("[", "").replace("]", ""));
+
+
+                            e.addField("Atomic Number", res.getInt("atomicNumber") + "", true);
+                            e.addField("Symbol", res.getString("symbol"), true);
+                            e.addField("Mass", res.getString("atomicMass").substring(0, res.getString("atomicMass").indexOf("(")) + " amu", true);
+
+                            e.addField("Basic information", "Protons\nNeutrons\nElectrons\nGroup\nIon Charges\nStable?", true);
+
+
+                            String d1 = res.getInt("atomicNumber") + "\n" +
+                                    (Math.round(Float.parseFloat(res.getString("atomicMass").substring(0, res.getString("atomicMass").indexOf("(")))) - res.getInt("atomicNumber")) +
+                                    "\n" + res.getInt("atomicNumber") + "\n" +
+                                    BotUtils.capitalizeFirst(res.getString("groupBlock"));
+
+                            String[] oxyStates = String.valueOf(res.get("oxidationStates")).split(", ");
+                            if(oxyStates.length < 1 || oxyStates[0].isEmpty()){
+                                d1 += "\n0";
+                            }
+                            else{
+                                int x = Integer.parseInt(oxyStates[0]);
+                                d1 += "\n" + x;
+                                for (int i = 1; i < oxyStates.length; i++) {
+                                    int y = Integer.parseInt(oxyStates[i]);
+                                    if((y > 0 && x < 0) || (y < 0 && x > 0)){
+                                        break;
+                                    }
+
+                                    d1 += ", " + y;
+                                }
+                            }
+                            d1 += "\n" + stable;
+                            e.addField("\u200b", d1, true);
+                            e.addField("\u200b", "\u200b", true);
+
+                            e.addField("Temperature information", "Boiling point\nMelting point\nState at STP", true);
+                            e.addField("\u200b",
+                                    (String.valueOf(res.get("boilingPoint")).isEmpty() ?  "Unknown" : res.get("boilingPoint") + " K")+ "\n" +
+                                            (String.valueOf(res.get("meltingPoint")).isEmpty() ?  "Unknown" : res.get("meltingPoint") + " K") + "\n" +
+                                    BotUtils.capitalizeFirst((String.valueOf(res.get("standardState")).isEmpty() ?  "Unknown" : res.get("standardState") + "")), true);
+                            e.addField("\u200b", "\u200b", true);
+
+                            e.addField("Other information", "Electronegativity\nRadius\nDensity\nFirst Ionization Energy\nHybridization\nDiscovered in\nForms " +
+                                    BotUtils.capitalizeFirst(res.getString("bondingType").isEmpty() ? "unknown" : res.getString("bondingType")) + " bonds", true);
+
+                            String d2 = (String.valueOf(res.get("electronegativity")).isEmpty() ? "0" :  res.get("electronegativity"))
+                                    + "\n" + (String.valueOf(res.get("atomicRadius")).isEmpty() ? "Unknown" :  res.get("atomicRadius") + " picometers") + "\n" +
+                                    (String.valueOf(res.get("density")).isEmpty() ? "Unknown" :  res.get("density") + " kg/cm^3") + "\n" +
+                                    (String.valueOf(res.get("ionizationEnergy")).isEmpty() ? "Unknown" : res.get("ionizationEnergy") + " kJ/mol") + "\n" +
+                                    (String.valueOf(res.get("electronicConfiguration")).isEmpty() ? "Unknown" :  res.get("electronicConfiguration")) +
+                                    "\n" + res.get("yearDiscovered");
+
+                            e.addField("\u200b", d2, true);
+
+                        };
+
+                        BotUtils.sendMessage(channel, embedCreateSpecConsumer);
+                    }
+                }
+                break;
+
             }
             case "eval": case "exec": case "execute":{
                 if(lowerArgs.length < 3){
@@ -736,8 +999,55 @@ class EventProcessor {
                 }
                 break;
             }
+            case "clear":{
+
+                if(lowerArgs.length < 2 || !BotUtils.isPositiveInteger(lowerArgs[1])){
+                    BotUtils.sendArgumentsError(channel, "clear", "messages");
+                }
+                else {
+                    GuildChannel c = guild.getChannelById(channel.getId()).block();
+                    ChannelBean bean = new ChannelBean(c.getId().asLong(), c.getType().getValue());
+
+                    TextChannel ctxt = new TextChannel(Main.client.getServiceMediator(), bean);
+
+                    if(!c.getEffectivePermissions(sender.getId()).block().contains(Permission.MANAGE_MESSAGES)){
+                        BotUtils.sendMessage(channel, "You must have the Manage Messages permission");
+                        break;
+                    }
+                    else if(Integer.parseInt(lowerArgs[1]) > 314){
+                        BotUtils.sendMessage(channel, "You can only delete at most 314 messages!");
+                        break;
+                    }
+
+                    int numToDelete = Integer.parseInt(lowerArgs[1]);
+
+                    List<Message> mList = channel.getMessagesBefore(message.getId()).collectList().block();
+                    List<Message> deleteList = mList.subList(0, numToDelete);
+
+                    List<Snowflake> flakes = new ArrayList<>();
+                    for (Message m : deleteList) {
+                        flakes.add(m.getId());
+                    }
+
+
+
+
+                    Publisher<Snowflake> ki = Flux.just(flakes.toArray(new Snowflake[0]));
+
+                    Flux<Snowflake> result = ctxt.bulkDelete(ki);
+                    while (result.hasElements().block()) {
+                        result.blockFirst();
+                    }
+                    message.delete().block();
+                }
+
+                break;
+            }
             case "help":{
-                BotUtils.sendMessage(channel, Data.helpEmbed);
+                BotUtils.sendMessage(channel, "Sending help message to your private channel!");
+                for (Consumer<EmbedCreateSpec> e : Data.helpEmbeds) {
+                    BotUtils.sendMessage(sender.getPrivateChannel().block(), e);
+                }
                 break;
             }
         }
