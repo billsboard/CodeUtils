@@ -11,6 +11,9 @@ import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
 import com.sun.management.OperatingSystemMXBean;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.reactivestreams.Publisher;
@@ -29,6 +32,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -1105,6 +1109,55 @@ class EventProcessor {
                         }
                     }
 
+                }
+                break;
+            }
+            case "urban": case "urbandict": case "urban-dict": {
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "urban", "keyword");
+                }
+                else{
+                    String word = BotUtils.removeCommand(body, rawArgs[0]);
+
+                    Request request = new Request.Builder()
+                            .url(new URL("http://api.urbandictionary.com/v0/define?term=" + word))
+                            .get()
+                            .build();
+
+                    String urbanPage = "https://www.urbandictionary.com/define.php?term=" + URLEncoder.encode(word, StandardCharsets.UTF_8.toString());
+
+                    Response response = BotUtils.httpClient.newCall(request).execute();
+                    if(response.isSuccessful()){
+                        JSONObject obj = new JSONObject(response.body().string());
+
+
+                        JSONArray defs = obj.getJSONArray("list");
+                        int defCount = defs.length() > 3 ? 3 : defs.length();
+
+                        if(defCount == 0){
+                            BotUtils.sendMessage(channel, "Word/Phrase not found!");
+                            break;
+                        }
+
+                        Consumer<EmbedCreateSpec> spec = e -> {
+                            e.setTitle("Urban Dictionary definition for " + word);
+                            e.setUrl(urbanPage);
+
+                            for (int i = 0; i < defCount; i++) {
+                                JSONObject temp = defs.getJSONObject(i);
+                                e.addField("Definition " + (i+1) + " (By `" + temp.getString("author").replace("[", "").replace("]", "") + "`)",
+                                        temp.getString("definition").replace("[", "").replace("]", "")
+                                        , false
+                                );
+                            }
+
+                        };
+
+                        BotUtils.sendMessage(channel, spec);
+                    }
+                    else{
+                        BotUtils.sendMessage(channel, "Lookup failed");
+                    }
                 }
                 break;
             }

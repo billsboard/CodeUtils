@@ -1,6 +1,7 @@
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
+import okhttp3.OkHttpClient;
 
 import java.awt.*;
 import java.io.BufferedReader;
@@ -19,6 +20,7 @@ public class BotUtils {
     static final Random random = new Random();
 
     static final long aopdFirstTime = 808012800000L;
+    static OkHttpClient httpClient = new OkHttpClient();
 
     static boolean isPositiveInteger(String s){
         return s.matches("\\d+?");

@@ -25,6 +25,8 @@ weather [location] :: Gets weather at location
 geolocation [location] :: Gets data about location
 element [element] :: Gets data about element
 time (timezone) :: Gets time in timezone
+[[Search]]
+urban [keyword] :: Searches Urban Dictionary for word
 [[Other]]
 help :: Displays this text
 squaretwitter :: Displays a random Square Twitter
