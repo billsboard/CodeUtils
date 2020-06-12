@@ -32,6 +32,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -103,7 +104,7 @@ class EventProcessor {
                 }
                 break;
             }
-            case "calc": case "calculate":{
+            case "calc": case "calculate": case "c":{
                 if(lowerArgs.length < 2){
                     BotUtils.sendArgumentsError(channel, "calc", "math expression");
                     break;
@@ -1041,6 +1042,70 @@ class EventProcessor {
                     message.delete().block();
                 }
 
+                break;
+            }
+            case "apic": case "apod": case "astronomypic":{
+
+                long time = ThreadLocalRandom.current().nextLong(BotUtils.aopdFirstTime, new Date().getTime());
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+                URL url = new URL("https://api.nasa.gov/planetary/apod?date=" + sdf.format(new Date(time)) + "&api_key=" + Data.apiKeys.get("nasa"));
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                con.setRequestMethod("GET");
+
+                if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+                    BufferedReader in = new BufferedReader(new InputStreamReader(
+                            con.getInputStream()));
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    inputLine = response.toString();
+
+                    JSONObject obj = new JSONObject(inputLine);
+
+
+                    Consumer<EmbedCreateSpec> spec = e -> {
+                        e.setDescription("NASA Astronomy Picture of the Day for " + sdf.format(new Date(time)));
+                        e.setImage(obj.getString("url"));
+                        e.setFooter(obj.getString("explanation"), "");
+                    };
+
+                    BotUtils.sendMessage(channel, spec);
+                }
+
+                break;
+            }
+            case "poll":{
+                if(lowerArgs.length < 6){
+                    BotUtils.sendArgumentsError(channel, "poll", "question |", "reactiontext |", "reactions");
+                }
+                else{
+                    String[] data = BotUtils.removeCommand(body, rawArgs[0]).replace(" | ", "|").split("\\|");
+                    Consumer<EmbedCreateSpec> spec = e -> {
+                        e.setDescription(data[0]);
+                        e.addField("React with", data[1], false);
+
+                        e.setFooter("Poll requested by " + sender.getUsername() + "#" + sender.getDiscriminator() + " using CodeUtils", sender.getAvatarUrl());
+                    };
+
+                    String[] reactions = data[2].split(" ");
+                    Message m = BotUtils.sendMessage(channel, spec);
+                    message.delete().block();
+                    for (int i = 0; i < reactions.length; i++) {
+                        String rct = reactions[i];
+                        if(rct.length() < 3){
+                            m.addReaction(ReactionEmoji.unicode(rct)).block();
+                        }
+                        else{
+                            String[] reactionData = rct.substring(0, rct.length() - 1).split(":");
+                            m.addReaction(ReactionEmoji.of(Long.parseLong(reactionData[2]), reactionData[1], false)).block();
+                        }
+                    }
+
+                }
                 break;
             }
             case "help":{

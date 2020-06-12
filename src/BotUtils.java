@@ -1,3 +1,4 @@
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 
@@ -17,6 +18,8 @@ public class BotUtils {
     static final String BOT_PREFIX = "^";
     static final Random random = new Random();
 
+    static final long aopdFirstTime = 808012800000L;
+
     static boolean isPositiveInteger(String s){
         return s.matches("\\d+?");
     }
@@ -34,17 +37,17 @@ public class BotUtils {
     }
 
 
-    static void sendMessage(MessageChannel channel, String message){
+    static Message sendMessage(MessageChannel channel, String message){
         if(message.length() > 2000){
-            channel.createMessage("```Resultant message greater than 2000 characters```").block();
+            return channel.createMessage("```Resultant message greater than 2000 characters```").block();
         }
         else{
-            channel.createMessage(message).block();
+            return channel.createMessage(message).block();
         }
     }
 
-    static void sendMessage(MessageChannel channel, Consumer<EmbedCreateSpec> embed){
-        channel.createEmbed(embed).block();
+    static Message sendMessage(MessageChannel channel, Consumer<EmbedCreateSpec> embed){
+        return channel.createEmbed(embed).block();
     }
 
     static void sendArgumentsError(MessageChannel channel , String command, String... argType){

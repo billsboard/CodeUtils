@@ -7,6 +7,10 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
 import discord4j.core.object.util.Snowflake;
+import okhttp3.OkHttp;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -23,17 +27,18 @@ public class Main {
     static DiscordClient client;
     static EventProcessor eventProcessor;
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws Exception {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Application Terminating ...");
         }));
 
         Scanner scan = new Scanner(new FileReader("token.txt"));
-
         DiscordClientBuilder builder = DiscordClientBuilder.create(scan.nextLine());
         builder.setInitialPresence(Presence.online(Activity.playing("with wet noodles")));
         client = builder.build();
+        scan.close();
+
 
         client.getEventDispatcher().on(ReadyEvent.class)
                 .subscribe(event -> {
@@ -43,41 +48,8 @@ public class Main {
 
         new EventProcessor(client.getEventDispatcher().on(MessageCreateEvent.class));
 
-        URL url;
 
-
-        try {
-            System.out.println("Submitting language request to Judge0");
-            url = new URL("https://api.judge0.com/languages/");
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-
-            if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
-                BufferedReader in = new BufferedReader(new InputStreamReader(
-                        con.getInputStream()));
-                String inputLine;
-                StringBuilder response = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                inputLine = response.toString();
-
-
-                JSONArray jsonArr = new JSONArray(inputLine);
-                for (int i = 0; i < jsonArr.length(); i++) {
-                    JSONObject o = jsonArr.getJSONObject(i);
-                    Data.languageID.put(o.getString("name").split(" ")[0].toLowerCase(), o.getInt("id"));
-                }
-
-                System.out.println(Data.languageID);
-
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        scan.close();
+        Data.initDataParams();
         scan = new Scanner(new FileReader("keys.txt"));
 
         while (scan.hasNextLine()){
@@ -85,7 +57,34 @@ public class Main {
             Data.apiKeys.put(s[0], s[1]);
         }
 
-        Data.initDataParams();
+
+        System.out.println("Submitting language request to Judge0");
+
+        OkHttpClient cl = new OkHttpClient();
+        Request req = new Request.Builder()
+                .url("https://judge0.p.rapidapi.com/languages")
+                .get()
+                .addHeader("x-rapidapi-host", "judge0.p.rapidapi.com")
+                .addHeader("x-rapidapi-key", Data.apiKeys.get("judge0"))
+                .build();
+
+        Response response = cl.newCall(req).execute();
+
+        if(response.isSuccessful()){
+            JSONArray jsonArr = new JSONArray(response.body().string());
+            for (int i = 0; i < jsonArr.length(); i++) {
+                JSONObject o = jsonArr.getJSONObject(i);
+                Data.languageID.put(o.getString("name").split(" ")[0].toLowerCase(), o.getInt("id"));
+            }
+
+            System.out.println(Data.languageID);
+        }
+
+
+
+
+
+
 
         client.login().block();
 

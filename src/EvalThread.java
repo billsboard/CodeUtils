@@ -1,4 +1,6 @@
 import discord4j.core.object.entity.MessageChannel;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -24,11 +26,13 @@ class EvalThread extends Thread {
 
     public void run(){
         try {
-            URL url = new URL("https://api.judge0.com/submissions/?base64_encoded=true");
+            URL url = new URL("https://judge0.p.rapidapi.com/submissions/?base64_encoded=true");
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setDoOutput(true);
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json; utf-8");
+            con.setRequestProperty("x-rapidapi-host", "judge0.p.rapidapi.com");
+            con.setRequestProperty("x-rapidapi-key", Data.apiKeys.get("judge0"));
 
             String payload = "{\"source_code\":\"" + Base64.getMimeEncoder().encodeToString(code.getBytes(StandardCharsets.UTF_8)) + "\",\"language_id\":" + langID +
                     ",\"base64_encoded\": true}";
@@ -51,9 +55,11 @@ class EvalThread extends Thread {
                 inputLine = response.toString();
                 token = new JSONObject(inputLine).getString("token");
 
-                url = new URL("https://api.judge0.com/submissions/" + token + "?base64_encoded=true");
+                url = new URL("https://judge0.p.rapidapi.com/submissions/" + token + "?base64_encoded=true");
                 HttpURLConnection dataReq = (HttpURLConnection) url.openConnection();
                 dataReq.setRequestMethod("GET");
+                dataReq.setRequestProperty("x-rapidapi-host", "judge0.p.rapidapi.com");
+                dataReq.setRequestProperty("x-rapidapi-key", Data.apiKeys.get("judge0"));
 
 
                 StringBuilder temp;
@@ -93,6 +99,8 @@ class EvalThread extends Thread {
 
                     dataReq = (HttpURLConnection) url.openConnection();
                     dataReq.setRequestMethod("GET");
+                    dataReq.setRequestProperty("x-rapidapi-host", "judge0.p.rapidapi.com");
+                    dataReq.setRequestProperty("x-rapidapi-key", Data.apiKeys.get("judge0"));
                 }
 
                 String out = "```No data present```";

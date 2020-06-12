@@ -28,3 +28,5 @@ time (timezone) :: Gets time in timezone
 [[Other]]
 help :: Displays this text
 squaretwitter :: Displays a random Square Twitter
+aopd :: Gets Astronomy Picture of the Day
+poll [q] | [desc] | [reactions] :: Creates a poll
