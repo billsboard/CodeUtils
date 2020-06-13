@@ -25,6 +25,7 @@ weather [location] :: Gets weather at location
 geolocation [location] :: Gets data about location
 element [element] :: Gets data about element
 time (timezone) :: Gets time in timezone
+currency [subcommand] :: Currency related subcommands
 [[Search]]
 urban [keyword] :: Searches Urban Dictionary for word
 aopd :: Gets Astronomy Picture of the Day
