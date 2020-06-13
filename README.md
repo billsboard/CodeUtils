@@ -29,4 +29,4 @@ etc...
 ```
 
 
-If you are unable to procure such keys, simply create an empty keys.txt. The bot will still run, but API features may not work 
+If you are unable to procure such keys, simply create an empty keys.txt. The bot will still run, but API features will not work.
