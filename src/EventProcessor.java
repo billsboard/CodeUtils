@@ -1,38 +1,26 @@
-import com.fasterxml.jackson.annotation.JsonAlias;
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
+import com.sun.management.OperatingSystemMXBean;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.data.stored.ChannelBean;
 import discord4j.core.object.entity.*;
-import discord4j.core.object.reaction.Reaction;
 import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.object.util.Image;
 import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
-import com.sun.management.OperatingSystemMXBean;
-import okhttp3.OkHttpClient;
+import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -79,9 +67,11 @@ class EventProcessor {
         String[] rawArgs = body.split(" ");
 
         discord4j.core.object.entity.User sender = message.getAuthor().get();
+        if(sender.isBot()) return;
+
+        Data.messageQueue.push(message);
 
         if(!lowerArgs[0].startsWith(BotUtils.BOT_PREFIX)) return;
-        else if(sender.isBot()) return;
 
         if(channel == null) return;
 
@@ -690,7 +680,7 @@ class EventProcessor {
                 break;
             }
             case "werk":{
-                BotUtils.sendMessage(channel, "No Trevor, you must learn to spell!");
+                BotUtils.sendMessage(channel, "No " + sender.getMention() + ", you must learn to spell!");
                 break;
             }
             case "weather":{
@@ -1005,7 +995,9 @@ class EventProcessor {
                 break;
             }
             case "clear":{
-
+                BotUtils.sendMessage(channel, "The Discord4J clear algorithm was deemed too slow to use and has since been removed");
+                break;
+                /*
                 if(lowerArgs.length < 2 || !BotUtils.isPositiveInteger(lowerArgs[1])){
                     BotUtils.sendArgumentsError(channel, "clear", "messages");
                 }
@@ -1044,12 +1036,9 @@ class EventProcessor {
                         result.blockFirst();
                     }
                     message.delete().block();
-                }
-
-                break;
+                }*/
             }
             case "apic": case "apod": case "astronomypic":{
-
                 long time = ThreadLocalRandom.current().nextLong(BotUtils.aopdFirstTime, new Date().getTime());
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -1161,11 +1150,205 @@ class EventProcessor {
                 }
                 break;
             }
-            case "help":{
-                BotUtils.sendMessage(channel, "Sending help message to your private channel!");
-                for (Consumer<EmbedCreateSpec> e : Data.helpEmbeds) {
-                    BotUtils.sendMessage(sender.getPrivateChannel().block(), e);
+            case "define": case "dict": case "yandexdict": case "yandict":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "define", "keyword");
                 }
+                else{
+                    HttpUrl url = new HttpUrl.Builder()
+                            .host("dictionary.yandex.net")
+                            .scheme("https")
+                            .addPathSegments("api/v1/dicservice.json/lookup")
+                            .addQueryParameter("key", Data.apiKeys.get("yandex"))
+                            .addQueryParameter("lang", "en-en")
+                            .addQueryParameter("text", BotUtils.removeCommand(body, rawArgs[0]))
+                            .build();
+
+                    Request req = new Request.Builder().url(url).get().build();
+                    Response response = BotUtils.httpClient.newCall(req).execute();
+
+                    if(response.isSuccessful()){
+                        JSONObject obj = new JSONObject(response.body().string());
+
+                        if(obj.getJSONArray("def").length() < 1){
+                            BotUtils.sendMessage(channel, "Unable to get definition (check spelling?)");
+                            break;
+                        }
+
+                        JSONObject def = obj.getJSONArray("def").getJSONObject(0);
+                        JSONArray tr = def.getJSONArray("tr");
+
+                        Consumer<EmbedCreateSpec> spec = e -> {
+                            e.setUrl("https://tech.yandex.com/dictionary");
+                            e.setTitle("Yandex results for " + def.getString("text"));
+
+                            e.setDescription(BotUtils.capitalizeFirst(def.getString("pos")));
+                            
+                            StringBuilder s = new StringBuilder();
+                            for (Object o : tr) {
+                                JSONObject jo = (JSONObject) o;
+                                s.append(jo.getString("text").substring(0,1).toUpperCase());
+                                s.append(jo.getString("text").substring(1));
+                                s.append(", ");
+                            }
+
+                            e.addField("Definition", s.substring(0, s.length() - 2), false);
+                            e.setFooter("Powered by Yandex.Dictionary", "");
+
+                        };
+
+                        BotUtils.sendMessage(channel, spec);
+                    }
+
+                }
+                break;
+            }
+            case "bean":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "bean", "user");
+                }
+                else if(!guild.getMemberById(sender.getId()).block().getBasePermissions().block().contains(Permission.BAN_MEMBERS)){
+                    BotUtils.sendMessage(channel, "Error: Permission denied");
+                }
+                else if(guild.getClient().getUserById(Snowflake.of(BotUtils.getUserFromMention(lowerArgs[1]))).block() == null){
+                    BotUtils.sendMessage(channel, "User could not be found");
+                }
+                else if(Data.protectedIDs.contains(BotUtils.getUserFromMention(lowerArgs[1]))){
+                    BotUtils.sendMessage(channel, "No! You cannot turn the bot against " + lowerArgs[1] + ", my loyal comrade!");
+                }
+                else{
+                    BotUtils.sendMessage(channel, "User " + lowerArgs[1] + " has been sucessfully banned");
+                }
+                break;
+            }
+            case "wouldyourather": case "wyr":{
+                if(Data.runningPolls.containsKey(channel.getId().asLong())){
+                    BotUtils.sendMessage(channel, "Viewing currently active WYR in channel...");
+                    BotUtils.sendMessage(channel, Data.runningPolls.get(channel.getId().asLong()));
+                }
+                else if(lowerArgs.length < 3){
+                    BotUtils.sendArgumentsError(channel, "wyr", "question 1 |", "question 2");
+                }
+                else{
+
+                    String[] data = BotUtils.removeCommand(body, rawArgs[0]).trim().split("\\|");
+                    Consumer<EmbedCreateSpec> spec = e -> {
+                        e.addField("Would you rather...", "1) " + data[0] + "\n\u200b\nOR\n\u200b\n2)" + data[1], false);
+                        e.setFooter("Send \"1\" or \"2\" to vote!", null);
+                    };
+                    Data.runningPolls.put(channel.getId().asLong(), spec);
+
+                    Message m = BotUtils.sendMessage(channel, spec);
+                    HashMap<String, Integer> rMap = new HashMap<>(){
+                        {
+                            put("1", 0);
+                            put("2", 0);
+                        }
+                    };
+
+                    new WouldYouRatherThread(rMap, m, sender.getId().asLong()).start();
+                }
+
+                break;
+            }
+            case "currency": case "cur":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "currency", "subcommand", "args");
+                }
+                else {
+                    switch (lowerArgs[1]){
+                        case "list":{
+                            StringBuilder x = new StringBuilder();
+                            StringBuilder y = new StringBuilder();
+                            Set<String> keys = Data.availableCurrencies.keySet();
+                            for (String s : keys) {
+                                x.append(s).append("\n");
+                                y.append(Data.availableCurrencies.get(s)).append("\n");
+                            }
+
+                            Consumer<EmbedCreateSpec> spec = e -> {
+                                e.setDescription("Available Currencies");
+                                e.addField("Symbol", x.toString(), true);
+                                e.addField("\u200b", "\u200b", true);
+                                e.addField("Name", y.toString(), true);
+                            };
+                            BotUtils.sendMessage(channel, spec);
+                            break;
+                        }
+                        case "convert":{
+                            if(lowerArgs.length < 5 || !BotUtils.isNumeric(lowerArgs[4])){
+                                BotUtils.sendArgumentsError(channel, "currency convert", "from", "to", "amount");
+                            }
+                            else if(!Data.availableCurrencies.containsKey(lowerArgs[2].toUpperCase()) ||
+                                    !Data.availableCurrencies.containsKey(lowerArgs[3].toUpperCase())){
+                                BotUtils.sendMessage(channel, "One or more of the specified currencies are invalid! Use `currency list` to get available currencies");
+                            }
+                            else {
+                                BigDecimal i = new BigDecimal(lowerArgs[4]);
+                                if(i.compareTo(BigDecimal.ZERO) == -1){
+                                    BotUtils.sendMessage(channel, "Negative value entered, treating it as a positive value");
+                                    i = i.negate();
+                                }
+                                HttpUrl url = new HttpUrl.Builder()
+                                        .host("api.exchangeratesapi.io")
+                                        .scheme("https")
+                                        .addQueryParameter("base", lowerArgs[2].toUpperCase())
+                                        .addQueryParameter("symbols", lowerArgs[3].toUpperCase())
+                                        .addPathSegment("latest")
+                                        .build();
+
+                                Request req = new Request.Builder()
+                                        .url(url).get().build();
+
+                                Response response = BotUtils.httpClient.newCall(req).execute();
+                                if(response.isSuccessful()){
+                                    JSONObject obj = new JSONObject(response.body().string());
+                                    BigDecimal exchangeRate = obj.getJSONObject("rates").getBigDecimal(lowerArgs[3].toUpperCase());
+                                    exchangeRate = i.multiply(exchangeRate);
+                                    exchangeRate = exchangeRate.setScale(2, RoundingMode.HALF_EVEN);
+
+                                    BigDecimal finalI = i;
+                                    BigDecimal finalExchangeRate = exchangeRate;
+                                    Consumer<EmbedCreateSpec> spec = e -> {
+                                        e.setDescription(finalI.toString() + " " + lowerArgs[2].toUpperCase() + " at "
+                                                + obj.getJSONObject("rates").getFloat(lowerArgs[3].toUpperCase()) + " " + lowerArgs[3].toUpperCase() + "/" +
+                                                lowerArgs[2].toUpperCase() + " is " + finalExchangeRate.toString() + " " + lowerArgs[3].toUpperCase());
+                                    };
+
+                                    BotUtils.sendMessage(channel, spec);
+                                }
+                            }
+                            break;
+                        }
+                        case "help":
+                            BotUtils.sendMessage(channel, "Help command not implemented!");
+                            break;
+                        default:
+                            BotUtils.sendMessage(channel, "Sub-command not found! Try `currency help`");
+                            break;
+                    }
+                }
+                break;
+            }
+            case "help":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendMessage(channel, "Sending help message to your private channel!");
+                    for (Consumer<EmbedCreateSpec> e : Data.helpEmbeds) {
+                        BotUtils.sendMessage(sender.getPrivateChannel().block(), e);
+                    }
+                }
+                else {
+                    String cat = BotUtils.removeCommand(body, rawArgs[0]);
+                    for (String s : Data.helpCategories) {
+                        if(s.equalsIgnoreCase(cat.trim())){
+                            BotUtils.sendMessage(channel, Data.helpEmbeds.get(Data.helpCategories.indexOf(s)));
+                            return;
+                        }
+                    }
+
+                    BotUtils.sendMessage(channel, "Category not found, try `help` with no parameters to display all");
+                }
+
                 break;
             }
         }

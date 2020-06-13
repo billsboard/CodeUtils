@@ -1,13 +1,7 @@
+import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -22,6 +16,17 @@ public class Data {
         "https://drive.google.com/uc?export=download&id=19YfyRfe0Rc6DAfZKwuxaQGqVFQcTlxY-"};
 
     static ArrayList<Consumer<EmbedCreateSpec>> helpEmbeds = new ArrayList<>();
+    static ArrayList<String> helpCategories = new ArrayList<>();
+
+    static ArrayList<String> protectedIDs = new ArrayList<>(){
+        {
+            add("704852114517655562");
+            add("506696814490288128");
+            add("519326187491950593");
+            add("705825865790914580");
+            add("710521453644349450");
+        }
+    };
 
     static Consumer<EmbedCreateSpec> helpEmbed = x -> {
         x.setTitle("Help page");
@@ -117,15 +122,50 @@ public class Data {
 
     static HashMap<String, String> apiKeys = new HashMap<>();
 
-    static HashMap<String, HashMap<String, String>> helpData = new HashMap<>(){
-        {
+    //static Stack<Message> messageQueue = new Stack<>();
+    static FixedStack<Message> messageQueue = new FixedStack<>(100);
+    static HashMap<Long, Consumer<EmbedCreateSpec>> runningPolls = new HashMap<>();
 
+    static HashMap<String, String> availableCurrencies = new HashMap<>(){
+        {
+            put("USD", "US Dollar");
+            put("CAD", "Canadian Dollar");
+            put("JPY", "Japanese Dollar");
+            put("BGN", "Bulgarian Lev");
+            put("CZK", "Czech Koruna");
+            put("DKK", "Danish Krone");
+            put("GBP", "Pound Sterling");
+            put("HUN", "Hungarian Forint");
+            put("PLN", "Polish Zolty");
+            put("RON", "Romanian Leu");
+            put("SEK", "Swedish Krona");
+            put("CHF", "Swiss Franc");
+            put("ISK", "Icelandic Krona");
+            put("NOK", "Norwegian Krone");
+            put("HRK", "Croatian Kuna");
+            put("RUB", "Russian Rouble");
+            put("TRY", "Turkish Lira");
+            put("AUD", "Australian Dollar");
+            put("CNY", "Chinese Yuan");
+            put("HKD", "Hong Kong Dollar");
+            put("IDR", "Indonesian Rupiah");
+            put("ILS", "Israeli Shekel");
+            put("INR", "Indian Rupee");
+            put("KRW", "South Korean Won");
+            put("MXN", "Mexican Peso");
+            put("MYR", "Malaysian Ringgit");
+            put("NZD", "New Zealand Dollar");
+            put("PHP", "Philippine Peso");
+            put("SGD", "Singapore Dollar");
+            put("THB", "Thai Baht");
+            put("ZAR", "South African Rand");
         }
     };
 
+
     static void initDataParams(){
 
-        String s = getResource("help.txt");
+        String s = getResource("DataFiles/help.txt");
         Scanner scan = new Scanner(s);
 
         String in = scan.nextLine();
@@ -172,6 +212,7 @@ public class Data {
 
                 e.setFooter("[] denotes required parameter, () denotes optional parameter\nIf optional param is left blank, the sender's context will be used", "");
             };
+            helpCategories.add(title);
             helpEmbeds.add(spec);
         }
     }

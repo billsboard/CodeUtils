@@ -27,8 +27,9 @@ element [element] :: Gets data about element
 time (timezone) :: Gets time in timezone
 [[Search]]
 urban [keyword] :: Searches Urban Dictionary for word
+aopd :: Gets Astronomy Picture of the Day
 [[Other]]
 help :: Displays this text
 squaretwitter :: Displays a random Square Twitter
-aopd :: Gets Astronomy Picture of the Day
 poll [q] | [desc] | [reactions] :: Creates a poll
+wyr [option] | [option] :: Create wyr poll
