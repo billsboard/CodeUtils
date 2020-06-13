@@ -1,0 +1,4 @@
+[[Currency]]
+list :: Lists available currencies
+convert [from] [to] [amount] :: Convert between currencies
+help :: Displays this message

@@ -17,6 +17,7 @@ public class Data {
 
     static ArrayList<Consumer<EmbedCreateSpec>> helpEmbeds = new ArrayList<>();
     static ArrayList<String> helpCategories = new ArrayList<>();
+    static HashMap<String, Consumer<EmbedCreateSpec>> subcommandHelpEmbeds = new HashMap<>();
 
     static ArrayList<String> protectedIDs = new ArrayList<>(){
         {
@@ -28,67 +29,6 @@ public class Data {
         }
     };
 
-    static Consumer<EmbedCreateSpec> helpEmbed = x -> {
-        x.setTitle("Help page");
-
-        x.addField("**Math**", "`pfact [integer]`\n" +
-                    "`calc [expression]`\n" +
-                    "`base [from] [to] [value]`\n" +
-                    "`round [number]`\n" +
-                    "`floor [number]`\n" +
-                    "`ceiling [number]`\n" +
-                    "`constant [constant]`", true)
-                .addField("\u200b", "Gets prime factorization\n" +
-                        "Evaluates math expression\n" +
-                        "Converts number between bases\n" +
-                        "Round number to nearest integer\n" +
-                        "Round decimal down\n" +
-                        "Round decimal up\n" +
-                        "Gets a mathematical constant", true)
-                .addField("\u200b", "\u200b", true);
-
-        x.addField("**String**", "`ascii [string]`\n" +
-                "`alpha [string]`\n" +
-                "`length [string]`", true)
-                .addField("\u200b", "Gets string's ascii value\n" +
-                        "Decodes ascii to string\n" +
-                        "Gets length of string\n", true)
-                .addField("\u200b", "\u200b", true);
-
-        x.addField("**Discord**", "`avatar (user)`\n" +
-                "`serverinfo`\n" +
-                "`admins`\n" +
-                "`roles`\n" +
-                "`roleinfo`\n" +
-                "`userinfo`", true)
-                .addField("\u200b", "Gets a profile picture\n" +
-                        "Displays server data\n" +
-                        "Gets all admins in server\n" +
-                        "Get all the roles in the server\n" +
-                        "Get data on a specific role\n" +
-                        "Get data on a specific person", true)
-                .addField("\u200b", "\u200b", true);
-
-        x.addField("**Programming**", "`time (timeZone)`\n" +
-                "`jclass [string]`\n" +
-                "`stackoverflow [string]`\n" +
-                "`eval [language] [code]`", true)
-                .addField("\u200b", "Get the current time\n" +
-                        "Get data for a Java class\n" +
-                        "Search StackOverflow for answers\n" +
-                        "Executes code and returns `stdout`", true)
-                .addField("\u200b", "\u200b", true);
-
-        x.addField("**Other**", "`help`\n" +
-                "`info`\n" +
-                "`squaretwitter`", true)
-                .addField("\u200b", "Displays this text\n" +
-                        "Returns bot client info\n" +
-                        "Displays a random square twitter", true)
-                .addField("\u200b", "\u200b", true);
-
-        x.setFooter("Parentheses \"()\" denote optional parameter. Leaving it blank will cause the bot to default to the sender's context", "");
-    };
 
     static HashMap<String, String> constants = new HashMap<>(){
         {
@@ -165,6 +105,7 @@ public class Data {
 
     static void initDataParams(){
 
+        /* ---- General help command ---- */
         String s = getResource("DataFiles/help.txt");
         Scanner scan = new Scanner(s);
 
@@ -215,6 +156,61 @@ public class Data {
             helpCategories.add(title);
             helpEmbeds.add(spec);
         }
+        scan.close();
+
+        /* ---- Subcommand help commands ---- */
+        s = getResource("DataFiles/subHelp.txt");
+        scan = new Scanner(s);
+
+        in = scan.nextLine();
+        while (scan.hasNextLine()){
+            String title = "";
+
+            String[] data;
+            StringBuilder temp = new StringBuilder();
+
+            if(in.startsWith("[[")){
+                title = in.substring(2, in.length() - 2);
+                in = scan.nextLine();
+                while (!in.startsWith("[[")){
+                    temp.append(in);
+                    temp.append("\n\n");
+                    if(scan.hasNextLine()){
+                        in = scan.nextLine();
+                    }
+                    else{
+                        break;
+                    }
+                }
+            }
+
+            data = temp.toString().split("\n\n");
+
+            String finalTitle = title;
+            String[] finalData = data;
+            Consumer<EmbedCreateSpec> spec = e -> {
+                e.setDescription(finalTitle + " subcommands");
+
+                StringBuilder x = new StringBuilder();
+                StringBuilder y = new StringBuilder();
+
+                for (String finalDatum : finalData) {
+                    String[] z = finalDatum.split(" :: ");
+                    //x.append(finalTitle.toLowerCase()).append(" ").append(z[0]).append("\n");
+                    x.append(z[0]).append("\n");
+                    y.append(z[1]).append("\n");
+                }
+
+                e.addField("Command", x.toString(), true);
+                e.addField("\u200b", "\u200b", true);
+                e.addField("Description", y.toString(), true);
+
+                e.setFooter("Use these commands prefixed with the " + finalTitle.toLowerCase() + " command\nSyntax should be: " + finalTitle.toLowerCase() +
+                        " [subcommand]", null);
+            };
+            subcommandHelpEmbeds.put(title.toLowerCase(), spec);
+        }
+        scan.close();
     }
 
     static String getResource(String file){

@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 class EventProcessor {
 
@@ -1260,7 +1261,8 @@ class EventProcessor {
                         case "list":{
                             StringBuilder x = new StringBuilder();
                             StringBuilder y = new StringBuilder();
-                            Set<String> keys = Data.availableCurrencies.keySet();
+                            List<String> keys = Data.availableCurrencies.keySet().stream().sorted(String::compareTo).collect(Collectors.toList());
+
                             for (String s : keys) {
                                 x.append(s).append("\n");
                                 y.append(Data.availableCurrencies.get(s)).append("\n");
@@ -1321,7 +1323,7 @@ class EventProcessor {
                             break;
                         }
                         case "help":
-                            BotUtils.sendMessage(channel, "Help command not implemented!");
+                            BotUtils.sendMessage(channel, Data.subcommandHelpEmbeds.get("currency"));
                             break;
                         default:
                             BotUtils.sendMessage(channel, "Sub-command not found! Try `currency help`");
