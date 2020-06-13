@@ -23,11 +23,11 @@ In the root folder of the bot (said directory), place the Discord bot token in a
 
 Then place your API keys in a file called `keys.txt`.
 
-Keys.txt should have this format:
+`keys.txt` should have this format:
 ```
 key1Name key1
 key2Name key2
 etc...
 ```
 
-If you are unable to procure such keys, simply create an empty keys.txt. The bot will still run, but API features will not work.
+If you are unable to procure such keys, simply create an empty `keys.txt`. The bot will still run, but API features will not work.
