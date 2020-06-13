@@ -15,7 +15,7 @@ API keys:
 - Yandex Dictionary
 
 
-####**How to use:**
+#### **How to use:**
 
 Compile the source code for this bot into a .jar file, then place it in a directory.
 
