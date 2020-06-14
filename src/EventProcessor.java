@@ -607,7 +607,7 @@ class EventProcessor {
 
                 break;
             }
-            case "botinfo": case "info": case "status":{
+            case "botinfo": case "info": case "status": case "ping":{
                 Consumer<EmbedCreateSpec> embedCreateSpec = e -> {
                     e.setTitle("Bot information page");
 
@@ -632,7 +632,7 @@ class EventProcessor {
 
                     User bill = Main.client.getUserById(Snowflake.of(506696814490288128L)).block();
                     e.addField("**Credits**", "Coded by " + bill.getUsername() + "#" + bill.getDiscriminator() +
-                            "\nCoded using Discord4j version 3.0.14\n", true);
+                            "\nCoded using Discord4j version 3.0.14\nSome ideas taken without permission from <@327948165468782595> and <@417382632247001088>", true);
 
 
                 };
@@ -1040,36 +1040,94 @@ class EventProcessor {
                 }*/
             }
             case "apic": case "apod": case "astronomypic":{
-                long time = ThreadLocalRandom.current().nextLong(BotUtils.aopdFirstTime, new Date().getTime());
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                if(lowerArgs.length < 2) {
+                    URL url = new URL("https://api.nasa.gov/planetary/apod?" + "api_key=" + Data.apiKeys.get("nasa"));
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    con.setRequestMethod("GET");
 
-                URL url = new URL("https://api.nasa.gov/planetary/apod?date=" + sdf.format(new Date(time)) + "&api_key=" + Data.apiKeys.get("nasa"));
-                HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                con.setRequestMethod("GET");
+                    if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                        BufferedReader in = new BufferedReader(new InputStreamReader(
+                                con.getInputStream()));
+                        String inputLine;
+                        StringBuilder response = new StringBuilder();
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        inputLine = response.toString();
 
-                if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
-                    BufferedReader in = new BufferedReader(new InputStreamReader(
-                            con.getInputStream()));
-                    String inputLine;
-                    StringBuilder response = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
+                        JSONObject obj = new JSONObject(inputLine);
+
+
+                        Consumer<EmbedCreateSpec> spec = e -> {
+                            e.setTitle("NASA Astronomy Picture of the Day");
+                            e.setUrl(obj.getString("url"));
+                            e.setImage(obj.getString("url"));
+                            e.setFooter(obj.getString("explanation"), "");
+                        };
+
+                        BotUtils.sendMessage(channel, spec);
                     }
-                    inputLine = response.toString();
-
-                    JSONObject obj = new JSONObject(inputLine);
-
-
-                    Consumer<EmbedCreateSpec> spec = e -> {
-                        e.setDescription("NASA Astronomy Picture of the Day for " + sdf.format(new Date(time)));
-                        e.setImage(obj.getString("url"));
-                        e.setFooter(obj.getString("explanation"), "");
-                    };
-
-                    BotUtils.sendMessage(channel, spec);
                 }
+                else if(lowerArgs[1].contains("rand")){
+                    long time = ThreadLocalRandom.current().nextLong(BotUtils.aopdFirstTime, new Date().getTime());
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
+                    URL url = new URL("https://api.nasa.gov/planetary/apod?date=" + sdf.format(new Date(time)) + "&api_key=" + Data.apiKeys.get("nasa"));
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    con.setRequestMethod("GET");
+
+                    if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+                        BufferedReader in = new BufferedReader(new InputStreamReader(
+                                con.getInputStream()));
+                        String inputLine;
+                        StringBuilder response = new StringBuilder();
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        inputLine = response.toString();
+
+                        JSONObject obj = new JSONObject(inputLine);
+
+
+                        Consumer<EmbedCreateSpec> spec = e -> {
+                            e.setTitle("NASA Astronomy Picture of the Day for " + sdf.format(new Date(time)));
+                            e.setUrl(obj.getString("url"));
+                            e.setImage(obj.getString("url"));
+                            e.setFooter(obj.getString("explanation"), "");
+                        };
+
+                        BotUtils.sendMessage(channel, spec);
+                    }
+                }
+                else {
+                    URL url = new URL("https://api.nasa.gov/planetary/apod?" + "api_key=" + Data.apiKeys.get("nasa"));
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    con.setRequestMethod("GET");
+
+                    if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                        BufferedReader in = new BufferedReader(new InputStreamReader(
+                                con.getInputStream()));
+                        String inputLine;
+                        StringBuilder response = new StringBuilder();
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        inputLine = response.toString();
+
+                        JSONObject obj = new JSONObject(inputLine);
+
+
+                        Consumer<EmbedCreateSpec> spec = e -> {
+                            e.setTitle("NASA Astronomy Picture of the Day");
+                            e.setUrl(obj.getString("url"));
+                            e.setImage(obj.getString("url"));
+                            e.setFooter(obj.getString("explanation"), "");
+                        };
+
+                        BotUtils.sendMessage(channel, spec);
+                    }
+                }
                 break;
             }
             case "poll":{
@@ -1408,6 +1466,43 @@ class EventProcessor {
                         e.setFooter("**Bold** denotes 4x weakness/resistance to a type", null);
                     };
                     BotUtils.sendMessage(channel, spec);
+                }
+                break;
+            }
+            case "google":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "google", "search term");
+                }
+                else {
+                    String s =  URLEncoder.encode(BotUtils.removeCommand(body, rawArgs[0]), StandardCharsets.UTF_8.toString());
+                    BotUtils.sendMessage(channel, "Google search: https://www.google.com/search?q=" + s);
+                }
+                break;
+            }
+            case "tinyurl": case "shorturl":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "tinyurl", "url");
+                }
+                else{
+                    String s = BotUtils.removeCommand(body, rawArgs[0]);
+                    if (!s.toLowerCase().matches("^\\w+://.*")) {
+                        s = "http://" + s;
+                    }
+
+                    HttpUrl url = new HttpUrl.Builder()
+                            .host("tinyurl.com").scheme("https")
+                            .addPathSegment("api-create.php")
+                            .addQueryParameter("url",s).build();
+
+                    Response response = BotUtils.httpClient.newCall(new Request.Builder().url(url).get().build()).execute();
+                    if(response.isSuccessful()){
+                        String out = response.body().string();
+                        BotUtils.sendMessage(channel, "<" + s + "> shortened via TinyURL yields:\n<" + out + ">\nResulting url is " +
+                                (out.length() - s.length() > 0 ? out.length() - s.length() + " characters longer." : s.length() - out.length() + " characters shorter."));
+                    }
+                    else{
+                        BotUtils.sendMessage(channel, "MalformedURLException (Check spelling?)");
+                    }
                 }
                 break;
             }
