@@ -18,7 +18,6 @@ import java.util.Scanner;
 public class Main {
 
     static DiscordClient client;
-    static EventProcessor eventProcessor;
 
     public static void main(String[] args) throws Exception {
 
