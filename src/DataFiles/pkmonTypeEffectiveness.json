@@ -1,0 +1,25 @@
+{
+    "defense":{
+        "normal":{"immune":["ghost"],"weak":["fighting"],"str":[]},
+        "fire":{"immune":[],"weak":["water","rock","ground"],"str":["grass","ice","bug","steel","fire","fairy"]},
+        "water":{"immune":[],"weak":["Electric","Grass"],"str":["steel","fire","ice","water"]},
+        "electric":{"immune":[],"weak":["ground"],"str":["flying"]},
+        "grass":{"immune":[],"weak":["fire","poison","flying","bug","ice"],"str":["grass","ground","water","electric"]},
+        "ice":{"immune":[],"weak":["fire","fighting","rock","steel"],"str":["ice"]},
+        "fighting":{"immune":[],"weak":["psychic","fairy","flying"],"str":["rock","bug","dark"]},
+        "poison":{"immune":[],"weak":["ground","psychic"],"str":["fighting","poison","grass"]},
+        "ground":{"immune":["electric"],"weak":["grass","water","ice"],"str":["poison","rock"]},
+        "flying":{"immune":["ground"],"weak":["electric","rock","ice"],"str":["grass","fighting","bug"]},
+        "psychic":{"immune":[],"weak":["dark","bug","ghost"],"str":["fighting","psychic"]},
+        "bug":{"immune":[],"weak":["fire","flying","rock"],"str":["fighting","ground","grass"]},
+        "rock":{"immune":[],"weak":["ground","fighting","steel","grass","water"],"str":["normal","flying","poison","fire"]},
+        "ghost":{"immune":["normal","fighting"],"weak":["dark","ghost"],"str":["poison","bug"]},
+        "dragon":{"immune":[],"weak":["dragon","ice","fairy"],"str":["grass","fire","water","electric"]},
+        "dark":{"immune":["psychic"],"weak":["fighting","bug","fairy"],"str":["ghost","dark"]},
+        "steel":{"immune":["poison"],"weak":["fire","fighting","ground"],"str":["normal","ice","flying","rock","bug","steel","grass","psychic","dragon","fairy"]},
+        "fairy":{"immune":["dragon"],"weak":["poison","steel"],"str":["dark","fighting","bug"]}
+    },
+    "attack": {
+    },
+    "types": ["normal","fighting","fire","water","grass","electric","ice","ground","poison","psychic","bug","rock","dark","ghost","steel","dragon","flying","fairy"]
+}

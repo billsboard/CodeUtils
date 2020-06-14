@@ -6,21 +6,14 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
-import discord4j.core.object.util.Snowflake;
-import okhttp3.OkHttp;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.*;
+import java.util.Scanner;
 
 public class Main {
 

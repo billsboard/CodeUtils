@@ -1332,6 +1332,85 @@ class EventProcessor {
                 }
                 break;
             }
+            case "weakness": case "weak":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "weakness", "type");
+                }
+                else{
+                    String[] types = BotUtils.removeCommand(body, rawArgs[0]).split(" ");
+                    JSONArray arr = Data.pokemonTypeEffectiveness.getJSONArray("types");
+
+                    StringBuilder normal = new StringBuilder();
+                    StringBuilder weak = new StringBuilder();
+                    StringBuilder str = new StringBuilder();
+                    StringBuilder immune = new StringBuilder();
+
+                    for (Object o : arr) {
+                        String type = String.valueOf(o);
+                        double modifier = 1;
+                        for (String s : types) {
+                            JSONObject target = Data.pokemonTypeEffectiveness.getJSONObject("defense").getJSONObject(s.toLowerCase());
+                            if(BotUtils.JSONArrayContainsString(target.getJSONArray("immune"), type)){
+                                modifier *= 0;
+                            }
+                            else if(BotUtils.JSONArrayContainsString(target.getJSONArray("weak"), type)){
+                                modifier *= 2;
+                            }
+                            if(BotUtils.JSONArrayContainsString(target.getJSONArray("str"), type)){
+                                modifier *= 0.5;
+                            }
+                        }
+
+                        switch (Double.toString(modifier)){
+                            case "0.0":
+                                immune.append(BotUtils.capitalizeFirst(type)).append(", ");
+                                break;
+                            case "0.25":
+                                str.append("**").append(BotUtils.capitalizeFirst(type)).append("**, ");
+                                break;
+                            case "0.5":
+                                str.append(BotUtils.capitalizeFirst(type)).append(", ");
+                                break;
+                            case "1.0":
+                                normal.append(BotUtils.capitalizeFirst(type)).append(", ");
+                                break;
+                            case "2.0":
+                                weak.append(BotUtils.capitalizeFirst(type)).append(", ");
+                                break;
+                            case "4.0":
+                                weak.append("**").append(BotUtils.capitalizeFirst(type)).append("**, ");
+                                break;
+                        }
+                    }
+
+                    Consumer<EmbedCreateSpec> spec = e -> {
+                        String s = "";
+                        for (String s1 : types) {
+                            s += s1 + "/";
+                        }
+                        s = s.substring(0, s.length() - 1);
+
+                        e.setTitle("Type effectiveness chart for pokemon of type " + s);
+
+                        if(weak.length() > 0){
+                            e.addField("Weaknesses", weak.substring(0, weak.length() - 2), false);
+                        }
+                        if(normal.length() > 0){
+                            e.addField("Neutral Damage", normal.substring(0, normal.length() - 2), false);
+                        }
+                        if(str.length() > 0){
+                            e.addField("Resistances", str.substring(0, str.length() - 2), false);
+                        }
+                        if(immune.length() > 0){
+                            e.addField("Immunities", immune.substring(0, immune.length() - 2), false);
+                        }
+
+                        e.setFooter("**Bold** denotes 4x weakness/resistance to a type", null);
+                    };
+                    BotUtils.sendMessage(channel, spec);
+                }
+                break;
+            }
             case "help":{
                 if(lowerArgs.length < 2){
                     BotUtils.sendMessage(channel, "Sending help message to your private channel!");

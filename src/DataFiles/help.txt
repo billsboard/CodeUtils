@@ -29,6 +29,7 @@ currency [subcommand] :: Currency related subcommands
 [[Search]]
 urban [keyword] :: Searches Urban Dictionary for word
 aopd :: Gets Astronomy Picture of the Day
+weak [typing] :: Pokemon type effectiveness calculator
 [[Other]]
 help :: Displays this text
 squaretwitter :: Displays a random Square Twitter

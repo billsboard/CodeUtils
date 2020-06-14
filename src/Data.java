@@ -1,5 +1,6 @@
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.util.*;
@@ -102,6 +103,8 @@ public class Data {
         }
     };
 
+
+    static JSONObject pokemonTypeEffectiveness = null;
 
     static void initDataParams(){
 
@@ -211,6 +214,9 @@ public class Data {
             subcommandHelpEmbeds.put(title.toLowerCase(), spec);
         }
         scan.close();
+
+        /* ---- Pokemon type data effectiveness ---- */
+        pokemonTypeEffectiveness = new JSONObject(getResource("DataFiles/pkmonTypeEffectiveness.json"));
     }
 
     static String getResource(String file){

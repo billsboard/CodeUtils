@@ -2,6 +2,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import okhttp3.OkHttpClient;
+import org.json.JSONArray;
 
 import java.awt.*;
 import java.io.BufferedReader;
@@ -214,6 +215,13 @@ public class BotUtils {
         }
 
         return out.toString().trim();
+    }
+
+    static boolean JSONArrayContainsString(JSONArray arr, String s){
+        for (Object o : arr) {
+            if(String.valueOf(o).equals(s)) return true;
+        }
+        return false;
     }
 
     static String getPublicIP(){
