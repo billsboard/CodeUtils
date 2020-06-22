@@ -1,0 +1,27 @@
+<victim> was shot by <player>
+<victim> walked into a cactus whilst trying to escape <player>
+<victim> drowned whilst trying to escape <player>
+<victim> experienced kinetic energy whilst trying to escape <player>
+<victim> was blown up by <player>
+<victim> hit the ground too hard whilst trying to escape <player>
+<victim> was squashed by a falling anvil whilst fighting <player>
+<victim> walked into fire whilst fighting <player>
+<victim> was burnt to a crisp whilst fighting <player>
+<victim> tried to swim in lava to escape <player>
+<victim> was struck by lightning whilst fighting <player>
+<victim> was killed by <player> using magic
+<victim> was slain by <player>
+<victim> was fireballed by <player>
+<victim> starved to death whilst fighting <player>
+<victim> suffocated in a wall whilst fighting <player>
+<victim> was killed while trying to hurt <player>
+<victim> was impaled by <player>
+<victim> didn't want to live in the same world as <player>
+<victim> was `rm -rf`ed by <player>
+<victim> fell prey to <player>'s abuse
+<victim> was kicked by <player> thinking they were a tree
+<victim> was killed by <player>'s perfume
+<player> shot <victim> using their sword
+<victim> was stabbed by <player> using a gun
+<victim> died to <player>'s blitzkrieg
+<victim> was gassed by <player>

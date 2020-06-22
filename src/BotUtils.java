@@ -233,4 +233,8 @@ public class BotUtils {
         } catch (Exception e){}
         return "0.0.0.0";
     }
+
+    static void sendDelayedMessage(MessageChannel c, String m, long t){
+        new DelayedMessageThread(c, m, t).start();
+    }
 }

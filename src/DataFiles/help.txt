@@ -26,12 +26,18 @@ geolocation [location] :: Gets data about location
 element [element] :: Gets data about element
 time (timezone) :: Gets time in timezone
 currency [subcommand] :: Currency related subcommands
+[[Fun]]
+kill (victim) (weapon) :: Kills a user
+ship :: Displays a random ship
 [[Search]]
 google [term] :: Searches using Google
 tinyurl [url] :: Shortens url using TinyURL
 urban [keyword] :: Searches Urban Dictionary for word
 aopd :: Gets Astronomy Picture of the Day
 weak [typing] :: Pokemon type effectiveness calculator
+[[Weeb]]
+anime [search] :: Searches for anime
+kitsune :: Display a random kitsune picture
 [[Other]]
 help :: Displays this text
 squaretwitter :: Displays a random Square Twitter

@@ -1,0 +1,24 @@
+<player> was pricked to death
+<player> drowned
+<player> experienced kinetic energy
+<player> blew up
+<player> was killed by [Intentional Game Design]
+<player> hit the ground too hard
+<player> fell from a high place
+<player> was squashed by a falling anvil
+<player> went up in flames
+<player> burned to death
+<player> tried to swim in lava
+<player> was struck by lightning
+<player> discovered the floor was lava
+<player> was killed by magic
+<player> starved to death
+<player> suffocated in a wall
+<player> fell out of the world
+<player> withered away
+<player> committed uninstall life
+<player> was killed by <@471721014821126147>'s hugs
+<player> was crushed by too many if statements
+<player> killed <player> with <player>'s knife inside <player>'s house
+<player> died to admin abuse
+<player> kicked a tree too hard

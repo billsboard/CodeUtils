@@ -7,6 +7,7 @@ import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
@@ -25,7 +26,10 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -145,11 +149,20 @@ class EventProcessor {
                 if(lowerArgs.length < 2){
                     BotUtils.sendArgumentsError(channel, "constant", "constant name");
                 }
-                else if(!Data.constants.containsKey(rawArgs[1])){
-                    BotUtils.sendMessage(channel, "Constant " + rawArgs[1] + " is not known by the bot. Due to nature of mathematical constant names, the argument is case sensitive");
-                }
                 else{
-                    BotUtils.sendMessage(channel, "Value of " + rawArgs[1] + " is\n```" + Data.constants.get(rawArgs[1]) + "```");
+                    HttpUrl url = new HttpUrl.Builder().host("api.billweb.ca").scheme("http")
+                            .addPathSegments("math/constants").addQueryParameter("constant", lowerArgs[1]).build();
+
+                    Response response = BotUtils.httpClient.newCall(new Request.Builder().url(url).get().build()).execute();
+                    if(response.isSuccessful()){
+                        JSONObject obj = new JSONObject(response.body().string());
+                        Consumer<EmbedCreateSpec> spec = e -> {
+                            e.setDescription(BotUtils.capitalizeFirst(obj.getString("name")));
+                            e.addField("Value", obj.get("value") + " " + obj.get("units"), true);
+                            e.addField("Symbol", lowerArgs[1], true);
+                        };
+                        BotUtils.sendMessage(channel, spec);
+                    }
                 }
                 break;
             }
@@ -329,8 +342,19 @@ class EventProcessor {
             case "serverstatus": case "serverinfo": case "server":{
                 Consumer<EmbedCreateSpec> embedCreateSpec = e -> {
                     e.setTitle("Information for \"" + guild.getName() + "\"")
-                            .setThumbnail(guild.getIconUrl(Image.Format.PNG).get())
                             .setDescription(guild.getDescription().isPresent() ? guild.getDescription().get() : "No description set");
+
+                    String url = guild.getIconUrl(Image.Format.PNG).isPresent() ? guild.getIconUrl(Image.Format.PNG).get() : "";
+                    if(url.isEmpty()){
+                    }
+                    else if(url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf("/") + 3).equals("a_")){
+                        url = url.substring(0, url.length() - 3) + "gif";
+                        e.setThumbnail(url);
+                    }
+                    else {
+                        e.setThumbnail(url);
+                    }
+
 
                     List<Member> members = guild.getMembers().collectList().block();
 
@@ -354,9 +378,9 @@ class EventProcessor {
 
                     Member owner = guild.getOwner().block();
 
+                    e.addField("\u200b", "\u200b", true);
                     e.addField("\u200b", members.size() + "\n" + (members.size() - x) + "\n" +
                             x + "\n" + owner.getNicknameMention() + "\n" + y, true);
-                    e.addField("\u200b", "\u200b", true);
 
 
                     List<Role> roles = guild.getRoles().collectList().block();
@@ -369,13 +393,14 @@ class EventProcessor {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-                    e.addField("\u200b", roles.size() + "\n" + guild.getEmojis().collectList().block().size() + "\n" + guild.getChannels().collectList().block().size()
-                             + "\n" + roles.get(roles.size() - 1 ).getName() + "\n" + guild.getRegionId() + "\n" + (afk == null ? "Not set" : afk.getMention()) +
-                            "\n" + sdf.format(new Date(guild.getJoinTime().get().toEpochMilli())), true);
                     e.addField("\u200b", "\u200b", true);
+                    e.addField("\u200b", roles.size() + "\n" + guild.getEmojis().collectList().block().size() + "\n" + guild.getChannels().collectList().block().size()
+                             + "\n" + roles.get(roles.size() - 1 ).getMention() + "\n" + guild.getRegionId() + "\n" + (afk == null ? "Not set" : afk.getMention()) +
+                            "\n" + sdf.format(new Date(guild.getJoinTime().get().toEpochMilli())), true);
 
 
                     e.addField("Nitro", "Tier\nBoosts", true);
+                    e.addField("\u200b", "\u200b", true);
                     e.addField("\u200b", guild.getPremiumTier().name() + "\n" + guild.getPremiumSubcriptionsCount().getAsInt(), true);
 
                     e.setFooter("Created by " + Main.client.getSelf().block().getMention(),Main.client.getSelf().block().getAvatarUrl());
@@ -520,26 +545,52 @@ class EventProcessor {
 
                         List<Member> members = guild.getMembers().collectList().block();
                         int x = 0;
+                        int x1 = 0;
                         for (Member m : members) {
                             if(m.getRoles().collectList().block().contains(r)) x++;
+                            if(m.getHighestRole().block().getId().asLong() == r.getId().asLong()) x1++;
                         }
 
-                        e.addField("Assigned members", "" + x, true);
-                        e.addField("Position", "" + (roles.size() - roles.indexOf(r)), true);
-                        e.addField("Color", BotUtils.hexFromColor(r.getColor()), true);
+                        e.addField("Role information", "Position\nPermission Count\nAssigned Members\nRole ID\nColor\nTop role of " + x1 + " members", true);
+                        e.addField("\u200b", "\u200b",true);
+                        e.addField("\u200b", (roles.size() - roles.indexOf(r)) + "\n" + r.getPermissions().size() + "\n" +
+                                + x + "\n" + r.getId().asLong() + "\n" + BotUtils.hexFromColor(r.getColor()), true);
+
 
                         StringBuilder y = new StringBuilder();
+                        StringBuilder z = new StringBuilder();
                         Set<Permission> perms = r.getPermissions();
+                        int max = perms.size() > 8 ? perms.size() / 2 : 8;
+                        int count = 0;
                         for (Permission p : perms) {
-                            y.append(
-                                    BotUtils.capitalizeFirst(p.toString().replace("_", " ")).replace("Tts", "TTS").
-                                            replace("Vad", "Voice Activity") +
-                                            "\n");
+                            if(count < max) {
+                                y.append(
+                                        BotUtils.capitalizeFirst(p.toString().replace("_", " ")).replace("Tts", "TTS").
+                                                replace("Vad", "Voice Activity") +
+                                                "\n");
+                            }
+                            else{
+                                z.append(
+                                        BotUtils.capitalizeFirst(p.toString().replace("_", " ")).replace("Tts", "TTS").
+                                                replace("Vad", "Voice Activity") +
+                                                "\n");
+                            }
+                            count++;
                         }
 
 
-                        if(y.toString().isEmpty()) y.append("No permissions explicitly granted");
-                        e.addField("Permissions", y.toString(), false);
+                        if(y.toString().isEmpty()){
+                            y.append("No permissions explicitly granted");
+                            z.append("\u200b");
+                        }
+                        else if(z.toString().isEmpty()){
+                            z.append("\u200b");
+                        }
+                        e.addField("Permissions", y.toString(), true);
+                        e.addField("\u200b", "\u200b", true);
+                        e.addField("\u200b", z.toString(), true);
+
+
                     };
 
                     BotUtils.sendMessage(channel, embedCreateSpecConsumer);
@@ -575,27 +626,41 @@ class EventProcessor {
 
                     Member m = guild.getMemberById(userToUse.getId()).block();
 
-                    e.setDescription("Data for user " + m.getNicknameMention());
-
+                    e.setTitle("User information for user " + (m.getNickname().isPresent() ? m.getNickname().get() : userToUse.getUsername()));
+                    e.setUrl(userToUse.getAvatarUrl());
+                    e.setThumbnail(userToUse.getAvatarUrl());
 
                     String x = "";
 
                     e.addField("Basic information", "Global Username\nID\nBot?", true);
+                    e.addField("\u200b", "\u200b", true);
                     e.addField("\u200b", userToUse.getUsername() + "#" + userToUse.getDiscriminator() + "\n" +
                             m.getId().asLong() + "\n" + (userToUse.isBot() ? "Yes" : "No"), true);
-                    e.addField("\u200b", "\u200b", true);
 
 
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
                     x += m.getHighestRole().block().getMention() + "\n";
+                    x += m.getRoles().collectList().block().size() + "\n";
                     x += sdf.format(m.getJoinTime().toEpochMilli()) + "\n";
 
 
 
-                    e.addField("Server-specific information", "Top Role\nServer join time (UTC)", true);
+                    e.addField("Server-specific information", "Top Role\nRole Count\nServer join time (UTC)", true);
+                    e.addField("\u200b", "\u200b", true);
                     e.addField("\u200b", x, true);
+
+                    StringBuilder y = new StringBuilder();
+                    List<Role> roleList = m.getRoles().collectList().block();
+                    Collections.reverse(roleList);
+                    for (Role r : roleList) {
+                        y.append(r.getMention()).append(", ");
+                    }
+
+                    //e.addField("Role list", y.deleteCharAt(y.length() - 2).toString(), false);
+                    /*e.addField("\u200b", "\u200b", true);
+                    e.addField("\u200b", "\u200b", true);*/
 
                     e.setColor(m.getColor().block());
                     //e.addField("Permissions", y.toString(), false);
@@ -850,6 +915,33 @@ class EventProcessor {
                 }
                 break;
             }
+            case "invert": case "inv": case "upsidedown":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "invert", "string");
+                }
+                else{
+                    String s = BotUtils.removeCommand(body, rawArgs[0]);
+                    StringBuilder newstr = new StringBuilder();
+                    char letter;
+                    for (int i=0; i< s.length(); i++) {
+                        letter = s.charAt(i);
+
+                        int a = Data.normal.indexOf(letter);
+                        int b = Data.split.indexOf(letter);
+                        if(a == -1 && b == -1){
+                            newstr.append(letter);
+                        }
+                        else if(a == -1){
+                            newstr.append(Data.normal.charAt(b));
+                        }
+                        else{
+                            newstr.append(Data.split.charAt(a));
+                        }
+                    }
+                    BotUtils.sendMessage(channel, "```" + newstr.reverse().toString() + "```");
+                }
+                break;
+            }
             case "element":{
                 if(lowerArgs.length < 2){
                     BotUtils.sendArgumentsError(channel, "element", "identifier");
@@ -990,6 +1082,7 @@ class EventProcessor {
                 }
                 else{
                     BotUtils.sendMessage(channel, "Evaluating... This can take a while");
+                    channel.type().block();
                     String s = BotUtils.removeCommand(body, rawArgs[0] + " " + rawArgs[1]);
                     new EvalThread(lowerArgs[1], s, channel).start();
                 }
@@ -1475,7 +1568,7 @@ class EventProcessor {
                 }
                 else {
                     String s =  URLEncoder.encode(BotUtils.removeCommand(body, rawArgs[0]), StandardCharsets.UTF_8.toString());
-                    BotUtils.sendMessage(channel, "Google search: https://www.google.com/search?q=" + s);
+                    BotUtils.sendMessage(channel, "Google search: https://www.google.com/search?q=" + s + "&safe=active");
                 }
                 break;
             }
@@ -1504,6 +1597,144 @@ class EventProcessor {
                         BotUtils.sendMessage(channel, "MalformedURLException (Check spelling?)");
                     }
                 }
+                break;
+            }
+            case "kill":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendMessage(channel, sender.getMention() + " fell out of the world\nKilled " + sender.getMention());
+                }
+                else if(lowerArgs.length == 2){
+
+                    String id = BotUtils.getUserFromMention(lowerArgs[1]);
+                    if(id.length() > 1 && BotUtils.isNumeric(id)) {
+                        if (Data.protectedIDs.contains(id)) {
+                            BotUtils.sendMessage(channel, "No! You may not kill my fellow comrades!");
+                        } else {
+                            Member m = guild.getMemberById(Snowflake.of(id)).block();
+                            if (m == null) {
+                                BotUtils.sendMessage(channel, "`victim` parameter must be a mention!");
+                            } else {
+                                String s = Data.enviromentKillMessages.get(BotUtils.random.nextInt(Data.enviromentKillMessages.size()));
+                                BotUtils.sendMessage(channel, s.replace("<player>", m.getMention()));
+                            }
+                        }
+                    }
+                    else {
+                        String s = Data.enviromentKillMessages.get(BotUtils.random.nextInt(Data.enviromentKillMessages.size()));
+                        BotUtils.sendMessage(channel, s.replace("<player>", rawArgs[1]));
+                    }
+                }
+                else {
+                    String id = BotUtils.getUserFromMention(lowerArgs[1]);
+                    if(id.length() > 1 && BotUtils.isNumeric(id)) {
+                        if (Data.protectedIDs.contains(id)) {
+                            BotUtils.sendMessage(channel, "No! You may not kill my fellow comrades!");
+                        } else {
+                            Member m = guild.getMemberById(Snowflake.of(id)).block();
+                            if (m == null) {
+                                BotUtils.sendMessage(channel, "`victim` parameter must be a mention!");
+                            } else {
+                                String s = Data.playerKillMessages.get(BotUtils.random.nextInt(Data.playerKillMessages.size()));
+                                BotUtils.sendMessage(channel, s.replace("<victim>", m.getMention()).replace(
+                                        "<player>", BotUtils.removeCommand(body, rawArgs[0] + " " + rawArgs[1])));
+                            }
+                        }
+                    }
+                    else {
+                        String s = Data.playerKillMessages.get(BotUtils.random.nextInt(Data.playerKillMessages.size()));
+                        BotUtils.sendMessage(channel, s.replace("<victim>", rawArgs[1]).replace(
+                                "<player>", BotUtils.removeCommand(body, rawArgs[0] + " " + rawArgs[1])));
+                    }
+                }
+                break;
+            }
+            case "anime":{
+                if(lowerArgs.length < 2){
+                    BotUtils.sendArgumentsError(channel, "anime", "search");
+                }
+                else{
+                    HttpUrl url = new HttpUrl.Builder().host("kitsu.io").scheme("https")
+                            .addPathSegments("api/edge/anime")
+                            .addQueryParameter("filter[text]", URLEncoder.encode(BotUtils.removeCommand(body, rawArgs[0]), StandardCharsets.UTF_8))
+                            .build();
+
+                    Response r = BotUtils.httpClient.newCall(new Request.Builder().url(url).get().build()).execute();
+                    if(r.isSuccessful()){
+                        JSONObject obj = new JSONObject(r.body().string());
+                        JSONObject firstGet = obj.getJSONArray("data").getJSONObject(0);
+                        JSONObject attributes = firstGet.getJSONObject("attributes");
+
+                        Consumer<EmbedCreateSpec> spec = e -> {
+                            e.setTitle("Anime search results for search query \"" + BotUtils.capitalizeFirst(BotUtils.removeCommand(body, rawArgs[0])) + "\"")
+                                    .setDescription(BotUtils.capitalizeFirst(String.valueOf(firstGet.get("type"))));
+
+                            //JSONObject("coverImage").getString("tiny")
+                                    System.out.println(new JSONObject(attributes.get("coverImage")).toString());
+
+                            e.addField("Name",
+                                    (attributes.has("canonicalTitle") ? attributes.getString("canonicalTitle") : "No title") +
+                                    (attributes.getJSONObject("titles").has("ja_jp") ? " (" + attributes.getString("canonicalTitle") + ")" : ""), false);
+
+                            e.addField("Basic information", "Score\nRank\nRating\nRelease date", true);
+                            StringBuilder x = new StringBuilder();
+                            x.append(attributes.has("averageRating") ? attributes.get("averageRating") + "/100" : "Not specified").append("\n");
+                            x.append(attributes.has("popularityRank") ? attributes.get("popularityRank") : "Not specified").append("\n");
+                            x.append(attributes.has("ageRatingGuide") ? attributes.get("ageRatingGuide") : "Not specified").append("\n");
+                            x.append(attributes.has("startDate") ? attributes.get("startDate") : "Not specified").append("\n");
+
+                            e.addField("\u200b", x.toString(), true);
+                            e.addField("\u200b", "\u200b", true);
+
+                            e.addField("Show information", "Episodes\nEpisode Length\nAired on", true);
+                            x = new StringBuilder();
+                            x.append(attributes.has("episodeCount") ?  attributes.get("episodeCount") : "Not specified").append("\n")
+                                    .append(attributes.has("episodeLength") ?  attributes.get("episodeLength") + " minutes" : "Not specified").append( "\n")
+                                    .append(attributes.has("subtype") ?  attributes.get("subtype") : "Not specified").append("\u200b");
+                            e.addField("\u200b", x.toString(), true);
+                            e.addField("\u200b", "\u200b", true);
+
+                            String synopsis = attributes.getString("synopsis");
+                            if(synopsis.length() > 1024) {
+                                while (synopsis.length() > 1021) {
+                                    synopsis = synopsis.substring(0, synopsis.lastIndexOf(" "));
+                                }
+                                synopsis += "...";
+                            }
+                            e.addField("Description", synopsis, false);
+
+                        };
+                        BotUtils.sendMessage(channel, spec);
+                    }
+                }
+                break;
+            }
+            case "ship":{
+                String s = Data.ships[BotUtils.random.nextInt(Data.ships.length)];
+                BotUtils.sendMessage(channel, s);
+                if(s.startsWith("~~")){
+                    BotUtils.sendDelayedMessage(channel,"OOPS! I hate this now!", TimeUnit.SECONDS.toMillis(1));
+                }
+                break;
+            }
+            case "kitsune":{
+                HttpUrl url = new HttpUrl.Builder().host("api.billweb.ca").scheme("http")
+                        .addPathSegments("anime/kitsune").build();
+
+                Response response = BotUtils.httpClient.newCall(new Request.Builder().url(url).get().build()).execute();
+                if(response.isSuccessful()){
+                    JSONObject obj = new JSONObject(response.body().string());
+                    Consumer<EmbedCreateSpec> spec = e -> {
+                        e.setImage(obj.getString("url"));
+                    };
+                    BotUtils.sendMessage(channel, spec);
+                }
+                break;
+            }
+            case "background": case "bg":{
+                break;
+            }
+            case "ThisCommandCannotEverBeExecuted":{
+                BotUtils.sendMessage(channel, "Wait, this shouldn't happen...");
                 break;
             }
             case "help":{

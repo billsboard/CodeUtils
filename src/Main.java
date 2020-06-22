@@ -25,6 +25,8 @@ public class Main {
             System.out.println("Application Terminating ...");
         }));
 
+        Data.initDataParams();
+
         Scanner scan = new Scanner(new FileReader("token.txt"));
         DiscordClientBuilder builder = DiscordClientBuilder.create(scan.nextLine());
         builder.setInitialPresence(Presence.online(Activity.playing("with wet noodles")));
@@ -41,7 +43,6 @@ public class Main {
         new EventProcessor(client.getEventDispatcher().on(MessageCreateEvent.class));
 
 
-        Data.initDataParams();
         scan = new Scanner(new FileReader("keys.txt"));
 
         while (scan.hasNextLine()){
